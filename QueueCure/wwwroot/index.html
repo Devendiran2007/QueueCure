@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QueueCure AI+ | Smart Clinic Queue Platform</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Main Top Bar -->
+        <header class="header">
+            <a href="/index.html" class="brand">
+                <i class="fa-solid fa-square-plus brand-dot"></i> QueueCure <span style="font-weight: 300;">AI+</span>
+            </a>
+            <div class="nav-links">
+                <a href="/patient/tv-display.html" class="btn btn-outline" target="_blank">
+                    <i class="fa-solid fa-tv"></i> TV Board
+                </a>
+                <a href="/patient/tracker.html" class="btn btn-outline">
+                    <i class="fa-solid fa-mobile-screen-button"></i> Track Token
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Landing Content -->
+        <main class="main-content" style="display: flex; align-items: center; justify-content: center; flex: 1;">
+            <section class="hero-section">
+                <!-- Info Left -->
+                <div class="hero-content">
+                    <span class="user-badge" style="margin-bottom: 1rem; display: inline-block;">Version 1.0 (Boilerplate)</span>
+                    <h1 class="hero-title">Elevate Your Clinic's <span style="color: var(--primary);">Queue Experience</span></h1>
+                    <p class="hero-subtitle">
+                        Replaces chaotic paper-ticket waiting systems with automated digital routing, real-time wait estimations, and interactive notifications.
+                    </p>
+                    
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <a href="/patient/tv-display.html" class="btn btn-primary" style="padding: 1rem 2rem;" target="_blank">
+                            <i class="fa-solid fa-play"></i> Launch Lobby Screen
+                        </a>
+                        <a href="/patient/tracker.html" class="btn btn-outline" style="padding: 1rem 2rem;">
+                            <i class="fa-solid fa-qrcode"></i> Patient Live Tracking
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Login Right -->
+                <div class="hero-image">
+                    <div class="card" style="width: 450px; padding: 2.5rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);">
+                        <div style="text-align: center; margin-bottom: 2rem;">
+                            <i class="fa-solid fa-user-shield" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 0.5rem;"></i>
+                            <h2 style="font-weight: 800;">Staff Access Console</h2>
+                            <p style="color: var(--text-muted); font-size: 0.9rem;">Sign in to manage patient entries & calling boards</p>
+                        </div>
+
+                        <!-- Login Form -->
+                        <form id="loginForm">
+                            <div class="form-group">
+                                <label class="form-label" for="username">Username</label>
+                                <div style="position: relative;">
+                                    <i class="fa-solid fa-user" style="position: absolute; left: 1rem; top: 1rem; color: var(--text-muted);"></i>
+                                    <input type="text" id="username" class="form-control" placeholder="e.g. receptionist_1" style="padding-left: 2.75rem;" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 2rem;">
+                                <label class="form-label" for="password">Password</label>
+                                <div style="position: relative;">
+                                    <i class="fa-solid fa-lock" style="position: absolute; left: 1rem; top: 1rem; color: var(--text-muted);"></i>
+                                    <input type="password" id="password" class="form-control" placeholder="••••••••" style="padding-left: 2.75rem;" required>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; border-radius: var(--radius-md);">
+                                Sign In <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                            </button>
+
+                            <div id="loginError" style="margin-top: 1rem; color: var(--danger); text-align: center; font-size: 0.9rem; font-weight: 600; display: none;"></div>
+                        </form>
+                        
+                        <div style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.25rem; font-size: 0.85rem; color: var(--text-muted); text-align: center;">
+                            Need to set up new accounts? Registered doctor or receptionist handles are configured in API startup script.
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <!-- Footer -->
+        <footer style="background-color: var(--bg-surface); padding: 1.5rem; text-align: center; border-top: 1px solid var(--border); font-size: 0.9rem; color: var(--text-muted);">
+            &copy; 2026 QueueCure AI+. Built with ASP.NET Core & SignalR. All rights reserved.
+        </footer>
+    </div>
+
+    <!-- API Client Helper -->
+    <script src="/js/api.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const usernameInput = document.getElementById('username').value.trim();
+            const passwordInput = document.getElementById('password').value;
+            const errorDiv = document.getElementById('loginError');
+
+            errorDiv.style.display = 'none';
+
+            try {
+                // Call API via central API helper
+                const sessionData = await QueueCureAPI.request('/auth/login', 'POST', {
+                    username: usernameInput,
+                    password: passwordInput
+                }, false);
+
+                // Save session token details
+                QueueCureAPI.saveSession(sessionData);
+
+                // Role-based routing
+                if (sessionData.role === 'Receptionist') {
+                    window.location.href = '/receptionist/dashboard.html';
+                } else if (sessionData.role === 'Doctor') {
+                    window.location.href = '/doctor/dashboard.html';
+                } else {
+                    window.location.href = '/patient/tracker.html';
+                }
+            } catch (err) {
+                errorDiv.innerText = err.message || 'Login failed. Check server connection.';
+                errorDiv.style.display = 'block';
+            }
+        });
+
+        // Auto-redirect if already logged in
+        window.addEventListener('DOMContentLoaded', () => {
+            if (QueueCureAPI.isAuthenticated()) {
+                const session = QueueCureAPI.getSession();
+                if (session.role === 'Receptionist') {
+                    window.location.href = '/receptionist/dashboard.html';
+                } else if (session.role === 'Doctor') {
+                    window.location.href = '/doctor/dashboard.html';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Queue Tracker | QueueCure AI+</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom Progress Bar styles */
+        .progress-wrapper {
+            background-color: var(--border);
+            border-radius: 50px;
+            height: 14px;
+            width: 100%;
+            overflow: hidden;
+            margin: 1rem 0;
+            box-shadow: var(--shadow-sm);
+        }
+        .progress-fill {
+            height: 100%;
+            width: 5%;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--primary) 100%);
+            border-radius: 50px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .progress-percentage {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-align: right;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body style="background-color: var(--bg-base); display: flex; flex-direction: column; min-height: 100vh;">
+    <!-- Simple Header -->
+    <header class="header" style="justify-content: center; padding: 1rem;">
+        <a href="/index.html" class="brand" style="font-size: 1.4rem;">
+            <i class="fa-solid fa-square-plus brand-dot"></i> QueueCure <span style="font-weight: 300;">AI+</span>
+        </a>
+    </header>
+
+    <!-- Main Mobile & Tablet Shell -->
+    <main class="main-content" style="flex: 1; max-width: 550px; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; width: 100%; padding: 1.5rem;">
+        
+        <!-- Search Card -->
+        <div id="searchSection" class="card" style="text-align: center; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 3rem 2rem;">
+            <div style="margin-bottom: 2rem;">
+                <i class="fa-solid fa-ticket-simple" style="font-size: 3.5rem; color: var(--primary); margin-bottom: 1rem;"></i>
+                <h2 style="font-weight: 800; font-size: 1.6rem;">Live Queue Tracker</h2>
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">Monitor your queue place, serving tokens, and wait time in real-time.</p>
+            </div>
+            
+            <form id="trackForm">
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <input type="text" id="tokenQuery" class="form-control" placeholder="e.g. 101-001" style="font-size: 1.4rem; text-align: center; font-weight: 700; text-transform: uppercase; padding: 1.1rem;" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1.1rem; font-size: 1.05rem; border-radius: var(--radius-md);">
+                    <i class="fa-solid fa-magnifying-glass"></i> Start Tracking
+                </button>
+            </form>
+            
+            <div id="trackError" style="margin-top: 1rem; color: var(--danger); font-size: 0.9rem; font-weight: 600; display: none;"></div>
+        </div>
+
+        <!-- Live Tracker Detail Dashboard -->
+        <div id="trackerSection" class="card" style="display: none; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 2rem;">
+            <!-- Header buttons -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <button class="btn btn-outline" id="backToSearchBtn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                    <i class="fa-solid fa-arrow-left"></i> Change Token
+                </button>
+                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 700; color: var(--success);">
+                    <i class="fa-solid fa-circle fa-fade"></i> Live Connected
+                </div>
+            </div>
+
+            <!-- Wait Status Grid info cards -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <!-- Now Serving -->
+                <div class="card" style="padding: 1rem; background-color: var(--bg-base); text-align: center;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Now Serving</span>
+                    <div id="displayServingToken" style="font-size: 1.8rem; font-weight: 900; color: var(--calling); margin-top: 0.25rem;">None</div>
+                </div>
+                <!-- Your Token -->
+                <div class="card" style="padding: 1rem; background-color: var(--primary-light); border-color: var(--primary); text-align: center;">
+                    <span style="font-size: 0.75rem; color: var(--primary); font-weight: 700; text-transform: uppercase;">Your Token</span>
+                    <div id="displayTokenNumber" style="font-size: 1.8rem; font-weight: 900; color: var(--primary); margin-top: 0.25rem;">N/A</div>
+                </div>
+            </div>
+
+            <!-- Main Status Parameters List -->
+            <div style="background-color: var(--bg-surface); border: 1px solid var(--border); padding: 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; font-size: 0.95rem;">
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
+                    <span style="color: var(--text-muted); font-weight: 500;">Patient Name</span>
+                    <strong id="displayPatientName">Name</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
+                    <span style="color: var(--text-muted); font-weight: 500;">Assigned Room</span>
+                    <strong id="displayRoomNumber" style="color: var(--primary);">Room N/A</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted); font-weight: 500;">Doctor Name</span>
+                    <strong id="displayDoctorName">Doctor</strong>
+                </div>
+            </div>
+
+            <!-- Wait indicators: Ahead Count and Wait Time -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;" id="queueStatsBox">
+                <div class="card" style="padding: 1rem; text-align: center; border-color: var(--border);">
+                    <i class="fa-solid fa-users" style="color: var(--accent); margin-bottom: 0.25rem;"></i>
+                    <div style="font-size: 1.5rem; font-weight: 800;" id="displayTokensAhead">0</div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Tokens Ahead</span>
+                </div>
+                <div class="card" style="padding: 1rem; text-align: center; border-color: var(--border);">
+                    <i class="fa-solid fa-hourglass-start" style="color: var(--warning); margin-bottom: 0.25rem;"></i>
+                    <div style="font-size: 1.5rem; font-weight: 800;" id="displayWaitEstimate">~0 mins</div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Est. Wait Time</span>
+                </div>
+            </div>
+
+            <!-- Animated Queue Progress Bar -->
+            <div class="card" style="padding: 1.25rem; margin-bottom: 1.5rem; border-color: var(--border);" id="progressBarCard">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; font-weight: 600;">
+                    <span style="color: var(--text-muted);"><i class="fa-solid fa-route"></i> Queue Progress</span>
+                    <span id="displayStatusText" class="token-status status-waiting">Waiting</span>
+                </div>
+                
+                <div class="progress-wrapper">
+                    <div class="progress-fill" id="progressBarFill"></div>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: -0.5rem;">
+                    <span>Checked In</span>
+                    <span id="progressBarLabel">10% Complete</span>
+                    <span>Served</span>
+                </div>
+            </div>
+
+            <!-- Active Called alerts buzzer indicators -->
+            <div id="callingAlertBox" style="display: none; text-align: center; background-color: #ede9fe; border: 2px solid #7c3aed; color: #7c3aed; padding: 1.5rem; border-radius: var(--radius-md); animation: pulse 1.5s infinite;">
+                <i class="fa-solid fa-bell-ring fa-bounce" style="font-size: 2.2rem; margin-bottom: 0.5rem; display: block;"></i>
+                <h3 style="font-weight: 800; font-size: 1.35rem;">YOUR TURN HAS ARRIVED!</h3>
+                <p style="font-size: 0.95rem; margin-top: 0.25rem; font-weight: 600;">Please proceed to <span id="alertRoom">N/A</span> immediately.</p>
+            </div>
+            
+            <div id="completedAlertBox" style="display: none; text-align: center; background-color: #d1fae5; border: 2px solid #059669; color: #059669; padding: 1.5rem; border-radius: var(--radius-md);">
+                <i class="fa-solid fa-circle-check" style="font-size: 2.2rem; margin-bottom: 0.5rem; display: block;"></i>
+                <h3 style="font-weight: 800; font-size: 1.35rem;">Consultation Finished</h3>
+                <p style="font-size: 0.95rem; margin-top: 0.25rem; font-weight: 600;">Thank you! Your consultation has been completed.</p>
+            </div>
+
+            <div id="skippedAlertBox" style="display: none; text-align: center; background-color: #fee2e2; border: 2px solid #ef4444; color: #ef4444; padding: 1.5rem; border-radius: var(--radius-md);">
+                <i class="fa-solid fa-circle-xmark" style="font-size: 2.2rem; margin-bottom: 0.5rem; display: block;"></i>
+                <h3 style="font-weight: 800; font-size: 1.35rem;">Ticket Skipped</h3>
+                <p style="font-size: 0.95rem; margin-top: 0.25rem; font-weight: 600;">You were marked as absent. Please visit front desk.</p>
+            </div>
+        </div>
+    </main>
+
+    <footer style="padding: 1.25rem; text-align: center; font-size: 0.85rem; color: var(--text-muted); border-top: 1px solid var(--border); background-color: var(--bg-surface);">
+        QueueCure AI+ Lobby Tracker. Updates live using WebSockets.
+    </footer>
+
+    <!-- SignalR client -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/realtime.js"></script>
+    <script>
+        let currentTrackingNumber = null;
+        let lastKnownStatus = null;
+
+        // Perform vibration if supported by phone on status alerts
+        function triggerVibration() {
+            if (navigator.vibrate) {
+                navigator.vibrate([200, 100, 200, 100, 300]);
+            }
+        }
+
+        // Track Token Status
+        async function trackToken(tokenNum) {
+            const errorDiv = document.getElementById('trackError');
+            errorDiv.style.display = 'none';
+
+            try {
+                const data = await QueueCureAPI.request(`/queue/status/${tokenNum}`, 'GET', null, false);
+                currentTrackingNumber = tokenNum;
+                
+                // Show tracking details card, hide search card
+                document.getElementById('searchSection').style.display = 'none';
+                document.getElementById('trackerSection').style.display = 'block';
+
+                // Ingest parameters
+                document.getElementById('displayTokenNumber').innerText = data.tokenNumber;
+                document.getElementById('displayServingToken').innerText = data.currentTokenBeingServed;
+                document.getElementById('displayPatientName').innerText = data.patientName;
+                document.getElementById('displayDoctorName').innerText = data.doctorName;
+                document.getElementById('displayRoomNumber').innerText = `Room ${data.roomNumber}`;
+
+                document.getElementById('displayTokensAhead').innerText = data.tokensAhead;
+                document.getElementById('displayWaitEstimate').innerText = `~${data.estimatedWaitMinutes} Mins`;
+
+                // Process Status Rendering
+                const statusBadge = document.getElementById('displayStatusText');
+                const queueStatsBox = document.getElementById('queueStatsBox');
+                const progressBarFill = document.getElementById('progressBarFill');
+                const progressBarLabel = document.getElementById('progressBarLabel');
+                
+                const callingAlert = document.getElementById('callingAlertBox');
+                const completedAlert = document.getElementById('completedAlertBox');
+                const skippedAlert = document.getElementById('skippedAlertBox');
+                
+                statusBadge.innerText = data.statusText;
+                
+                // Update local storage history
+                localStorage.setItem('qc_last_tracked', tokenNum);
+
+                // Hide all alert boxes initially
+                callingAlert.style.display = 'none';
+                completedAlert.style.display = 'none';
+                skippedAlert.style.display = 'none';
+                queueStatsBox.style.display = 'grid';
+
+                let progress = 5;
+
+                // Handle status layout transitions
+                if (data.status === 0 || data.statusText === 'Waiting') {
+                    statusBadge.className = 'token-status status-waiting';
+                    
+                    // Waiting progress calculation
+                    const ahead = data.tokensAhead;
+                    if (ahead === 0) progress = 85;
+                    else if (ahead === 1) progress = 70;
+                    else if (ahead === 2) progress = 55;
+                    else if (ahead === 3) progress = 40;
+                    else if (ahead === 4) progress = 25;
+                    else progress = 10;
+                    
+                    progressBarFill.style.background = 'linear-gradient(90deg, var(--accent) 0%, var(--primary) 100%)';
+                    progressBarLabel.innerText = `${progress}% On Track`;
+
+                } else if (data.status === 1 || data.statusText === 'InConsultation') {
+                    statusBadge.className = 'token-status status-calling';
+                    queueStatsBox.style.display = 'none';
+                    callingAlert.style.display = 'block';
+                    document.getElementById('alertRoom').innerText = `Room ${data.roomNumber}`;
+                    
+                    progress = 95;
+                    progressBarFill.style.background = 'linear-gradient(90deg, #a855f7 0%, var(--calling) 100%)';
+                    progressBarLabel.innerText = 'Called / In Consultation';
+
+                    if (lastKnownStatus !== 'InConsultation') {
+                        triggerVibration();
+                    }
+                } else if (data.status === 2 || data.statusText === 'Completed') {
+                    statusBadge.className = 'token-status status-active';
+                    queueStatsBox.style.display = 'none';
+                    completedAlert.style.display = 'block';
+                    
+                    progress = 100;
+                    progressBarFill.style.background = 'linear-gradient(90deg, var(--success) 0%, #059669 100%)';
+                    progressBarLabel.innerText = 'Finished';
+                } else if (data.status === 3 || data.statusText === 'Skipped') {
+                    statusBadge.className = 'token-status status-waiting';
+                    statusBadge.style.backgroundColor = '#fee2e2';
+                    statusBadge.style.color = '#ef4444';
+                    
+                    queueStatsBox.style.display = 'none';
+                    skippedAlert.style.display = 'block';
+                    
+                    progress = 0;
+                    progressBarFill.style.background = 'linear-gradient(90deg, #ef4444 0%, #b91c1c 100%)';
+                    progressBarLabel.innerText = 'Skipped';
+                }
+
+                progressBarFill.style.width = `${progress}%`;
+                lastKnownStatus = data.statusText;
+
+            } catch (err) {
+                errorDiv.innerText = err.message || 'Token not found. Check formatting.';
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // Back to search btn
+        document.getElementById('backToSearchBtn').addEventListener('click', () => {
+            currentTrackingNumber = null;
+            document.getElementById('searchSection').style.display = 'block';
+            document.getElementById('trackerSection').style.display = 'none';
+            localStorage.removeItem('qc_last_tracked');
+        });
+
+        // Submit Tracker Search
+        document.getElementById('trackForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const query = document.getElementById('tokenQuery').value.trim().toUpperCase();
+            trackToken(query);
+        });
+
+        // Initialize and setup live SignalR hook
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Check if there was a previously tracked token saved
+            const savedToken = localStorage.getItem('qc_last_tracked');
+            if (savedToken) {
+                document.getElementById('tokenQuery').value = savedToken;
+                await trackToken(savedToken);
+            }
+
+            // Real-time update hook
+            QueueCureRealtime.on("QueueUpdated", async () => {
+                if (currentTrackingNumber) {
+                    await trackToken(currentTrackingNumber);
+                }
+            });
+
+            QueueCureRealtime.on("TokenCalled", async (calledData) => {
+                if (currentTrackingNumber && calledData.tokenNumber === currentTrackingNumber) {
+                    await trackToken(currentTrackingNumber);
+                }
+            });
+
+            // Start connection
+            await QueueCureRealtime.start();
+        });
+    </script>
+</body>
+</html>

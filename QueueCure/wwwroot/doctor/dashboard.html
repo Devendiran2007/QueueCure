@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Consultation Console | QueueCure AI+</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Timeline styling */
+        .timeline {
+            position: relative;
+            margin: 2rem 0;
+            padding-left: 2rem;
+            border-left: 2px dashed var(--border);
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -2.4rem;
+            top: 0.25rem;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--border);
+            border: 2px solid var(--bg-surface);
+            transition: var(--transition);
+        }
+        .timeline-item.completed::before {
+            background-color: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+        .timeline-item.active::before {
+            background-color: var(--primary);
+            box-shadow: 0 0 8px var(--primary);
+        }
+        .timeline-time {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .timeline-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+        .timeline-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <a href="#" class="brand">
+                <i class="fa-solid fa-square-plus brand-dot"></i> QueueCure <span style="font-weight: 300;">AI+</span>
+            </a>
+            <div class="nav-links">
+                <div class="nav-user">
+                    <span class="user-badge" id="doctorNameHeader">Doctor Profile</span>
+                    <span id="availabilityStatus" class="token-status status-active">Online</span>
+                </div>
+                <button class="btn btn-outline" id="logoutBtn">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1 style="font-weight: 800; font-size: 2rem; margin-bottom: 0.25rem;" id="welcomeDoctor">Welcome, Doctor</h1>
+                    <p style="color: var(--text-muted);" id="doctorMeta">Specialization • Room N/A</p>
+                </div>
+                <div>
+                    <button class="btn btn-outline" id="toggleAvailBtn">
+                        <i class="fa-solid fa-power-off"></i> Toggle Status (Online/Away)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Console Grid -->
+            <div class="dashboard-grid" style="grid-template-columns: 1fr 1.5fr;">
+                
+                <!-- Current Patient Active Box (Left Column) -->
+                <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; border-color: var(--primary);">
+                    <div>
+                        <div class="card-header" style="margin-bottom: 1rem;">
+                            <h2 class="card-title"><i class="fa-solid fa-user-check" style="color: var(--primary);"></i> Current Consultation</h2>
+                            <span id="currentStatusBadge" class="token-status status-waiting">Idle</span>
+                        </div>
+                        
+                        <!-- Empty Active State -->
+                        <div id="emptySession" style="text-align: center; padding: 4rem 2rem; color: var(--text-muted);">
+                            <i class="fa-solid fa-stethoscope" style="font-size: 3.5rem; margin-bottom: 1rem; color: var(--border);"></i>
+                            <h3>No Patient Active</h3>
+                            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Click "Call Next Patient" to notify the next ticket in line.</p>
+                        </div>
+
+                        <!-- Active State Patient Details -->
+                        <div id="activeSession" style="display: none; padding: 1rem 0;">
+                            <div style="text-align: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem;">
+                                <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Ticket Number</div>
+                                <div id="activeTokenNumber" style="font-size: 4rem; font-weight: 900; color: var(--primary); margin: 0.25rem 0;">A-101</div>
+                                <h3 id="activePatientName" style="font-weight: 800; font-size: 1.5rem;">Patient Name</h3>
+                                <p id="activePatientPhone" style="color: var(--text-muted); font-size: 0.9rem;">+1 555-0199</p>
+                            </div>
+
+                            <!-- Live Step Timeline Tracker -->
+                            <div style="padding: 0 0.5rem;">
+                                <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Queue Journey Timeline</h4>
+                                <div class="timeline" id="patientTimeline">
+                                    <!-- Dynamic timeline steps -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Core Controls Actions (Mistake-Proof Layout) -->
+                    <div style="border-top: 1px solid var(--border); padding-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem;" id="doctorActionsContainer">
+                        <button class="btn btn-primary" id="callNextBtn" style="width: 100%; padding: 1.1rem; border-radius: var(--radius-sm);">
+                            <i class="fa-solid fa-bullhorn"></i> Call Next Patient
+                        </button>
+                        
+                        <button class="btn btn-primary" id="startSessionBtn" style="width: 100%; padding: 1.1rem; background-color: var(--success); border-radius: var(--radius-sm); display: none;">
+                            <i class="fa-solid fa-play"></i> Start Consultation
+                        </button>
+                        
+                        <div style="display: flex; gap: 1rem; width: 100%;" id="activeControls">
+                            <button class="btn btn-outline" id="completeSessionBtn" style="flex: 2; border-color: var(--primary); color: var(--primary); padding: 1rem;">
+                                <i class="fa-solid fa-check-double"></i> Complete Consultation
+                            </button>
+                            <button class="btn btn-outline" id="noShowSessionBtn" style="flex: 1; border-color: var(--danger); color: var(--danger); padding: 1rem;">
+                                <i class="fa-solid fa-user-slash"></i> Skip / No Show
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Doctor's Waiting Queue List (Right Column) -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fa-solid fa-users-viewfinder" style="color: var(--accent);"></i> Waiting Queue (<span id="waitingCountText">0</span>)</h2>
+                        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">ASSIGNED TODAY</span>
+                    </div>
+
+                    <div class="token-list" id="doctorQueueList">
+                        <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                            <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 2rem; margin-bottom: 1rem; color: var(--primary);"></i>
+                            <p>Loading your queue...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/realtime.js"></script>
+    <script>
+        // Check credentials and page access
+        if (!QueueCureAPI.isAuthenticated() || QueueCureAPI.getSession().role !== 'Doctor') {
+            window.location.href = '/index.html';
+        }
+
+        let doctorId = null;
+        let activeToken = null;
+        let previousWaitingCount = 0;
+
+        // Play soft chime tone for new queue check-ins
+        function playChimeAlert() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                
+                // Beep bell tone
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880.00, ctx.currentTime); // A5 High Note
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.4);
+            } catch (e) {
+                console.warn(e);
+            }
+        }
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            QueueCureAPI.clearSession();
+            window.location.href = '/index.html';
+        });
+
+        // Toggle availability state
+        document.getElementById('toggleAvailBtn').addEventListener('click', async () => {
+            try {
+                // In DoctorController, toggle availability changes IsAvailable
+                const res = await QueueCureAPI.request('/doctor/toggle-availability', 'POST', null, true);
+                updateAvailabilityUI(res.isAvailable);
+            } catch (err) {
+                alert(err.message || "Failed to update availability.");
+            }
+        });
+
+        function updateAvailabilityUI(isAvailable) {
+            const availBadge = document.getElementById('availabilityStatus');
+            if (isAvailable) {
+                availBadge.innerText = 'Online';
+                availBadge.className = 'token-status status-active';
+            } else {
+                availBadge.innerText = 'Away';
+                availBadge.className = 'token-status status-waiting';
+            }
+        }
+
+        // Load Doctor profile and database reference ID
+        async function loadProfile() {
+            try {
+                const profile = await QueueCureAPI.request('/doctor/my-profile', 'GET', null, true);
+                doctorId = profile.id;
+                
+                document.getElementById('doctorNameHeader').innerText = profile.doctorName;
+                document.getElementById('welcomeDoctor').innerText = `Welcome, ${profile.doctorName}`;
+                document.getElementById('doctorMeta').innerText = `${profile.specialty} • Room ${profile.roomNumber}`;
+                
+                updateAvailabilityUI(profile.isAvailable);
+
+                return profile.id;
+            } catch (err) {
+                alert("Failed to load doctor profile detail.");
+                window.location.href = '/index.html';
+            }
+        }
+
+        // Load Patient Journey Timeline
+        async function loadPatientTimeline(patientId) {
+            try {
+                const data = await QueueCureAPI.request(`/queue/patient/${patientId}/timeline`, 'GET', null, true);
+                const timelineContainer = document.getElementById('patientTimeline');
+                
+                let html = '';
+
+                // 1. Check In Step
+                const checkInDate = data.checkInTime ? new Date(data.checkInTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'N/A';
+                html += `
+                <div class="timeline-item completed">
+                    <div class="timeline-time">${checkInDate}</div>
+                    <div class="timeline-title">Registered & Queued</div>
+                    <div class="timeline-desc">Patient checked in at front desk.</div>
+                </div>`;
+
+                // 2. Called Step (Waiting duration calculation)
+                if (data.calledTime) {
+                    const calledDate = new Date(data.calledTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    html += `
+                    <div class="timeline-item completed">
+                        <div class="timeline-time">${calledDate}</div>
+                        <div class="timeline-title">Patient Called (Buzzer)</div>
+                        <div class="timeline-desc">Waited in lobby: <strong>${data.waitingDurationMinutes} mins</strong></div>
+                    </div>`;
+
+                    // 3. Consultation Step
+                    if (data.startedTime) {
+                        const startDate = new Date(data.startedTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        const descText = data.completedTime 
+                            ? `Consultation completed. Duration: <strong>${data.consultationDurationMinutes} mins</strong>` 
+                            : `In session. Treatment duration: <strong>${data.consultationDurationMinutes} mins</strong>`;
+                        
+                        html += `
+                        <div class="timeline-item ${data.completedTime ? 'completed' : 'active'}">
+                            <div class="timeline-time">${startDate}</div>
+                            <div class="timeline-title">Consultation In-Session</div>
+                            <div class="timeline-desc">${descText}</div>
+                        </div>`;
+                    } else {
+                        // Called but not started yet
+                        html += `
+                        <div class="timeline-item active">
+                            <div class="timeline-time">Pending</div>
+                            <div class="timeline-title">Waiting for patient to enter</div>
+                            <div class="timeline-desc">Waiting for doctor to press "Start Consultation".</div>
+                        </div>`;
+                    }
+                } else {
+                    // Still waiting in queue
+                    html += `
+                    <div class="timeline-item">
+                        <div class="timeline-time">Pending</div>
+                        <div class="timeline-title">Patient Waiting</div>
+                        <div class="timeline-desc">Position in queue: waiting.</div>
+                    </div>`;
+                }
+
+                timelineContainer.innerHTML = html;
+
+            } catch (err) {
+                console.error("Timeline loading failure:", err);
+            }
+        }
+
+        // Render current session block and controls (Mistake-Proof State Machine)
+        async function renderCurrentSession(token) {
+            const emptyBox = document.getElementById('emptySession');
+            const activeBox = document.getElementById('activeSession');
+            const statusBadge = document.getElementById('currentStatusBadge');
+            
+            const callBtn = document.getElementById('callNextBtn');
+            const startBtn = document.getElementById('startSessionBtn');
+            const activeControls = document.getElementById('activeControls');
+
+            activeToken = token;
+
+            if (!token) {
+                emptyBox.style.display = 'block';
+                activeBox.style.display = 'none';
+                statusBadge.style.display = 'inline-block';
+                statusBadge.innerText = 'Idle';
+                statusBadge.className = 'token-status status-waiting';
+                
+                callBtn.style.display = 'block';
+                startBtn.style.display = 'none';
+                activeControls.style.display = 'none';
+                return;
+            }
+
+            emptyBox.style.display = 'none';
+            activeBox.style.display = 'block';
+            
+            document.getElementById('activeTokenNumber').innerText = token.tokenNumber;
+            document.getElementById('activePatientName').innerText = token.name;
+            document.getElementById('activePatientPhone').innerText = token.phoneNumber;
+
+            // Load and build timeline step metrics
+            await loadPatientTimeline(token.id);
+
+            // Determine if started by checking timeline details
+            try {
+                const timeline = await QueueCureAPI.request(`/queue/patient/${token.id}/timeline`, 'GET', null, true);
+                if (timeline.startedTime) {
+                    // Consultation has started (Active In Session State)
+                    statusBadge.innerText = 'In Session';
+                    statusBadge.className = 'token-status status-active';
+                    
+                    callBtn.style.display = 'none';
+                    startBtn.style.display = 'none';
+                    activeControls.style.display = 'flex';
+                } else {
+                    // Called but not started (Waiting to enter state)
+                    statusBadge.innerText = 'Patient Called';
+                    statusBadge.className = 'token-status status-calling';
+                    
+                    callBtn.style.display = 'none';
+                    startBtn.style.display = 'block';
+                    activeControls.style.display = 'none';
+                }
+            } catch (err) {
+                // Fallback
+                statusBadge.innerText = 'Called';
+                statusBadge.className = 'token-status status-calling';
+                callBtn.style.display = 'none';
+                startBtn.style.display = 'block';
+                activeControls.style.display = 'none';
+            }
+        }
+
+        // Load waiting patients assigned to this doctor
+        async function loadDoctorQueue() {
+            if (!doctorId) return;
+            try {
+                const queue = await QueueCureAPI.request(`/queue/doctor/${doctorId}`, 'GET', null, true);
+                const queueList = document.getElementById('doctorQueueList');
+                
+                // Separate ongoing (InConsultation) from waiting list
+                const activeTokenInList = queue.find(t => t.status === 'InConsultation' || t.status === 1);
+                await renderCurrentSession(activeTokenInList);
+
+                const waiting = queue.filter(t => t.status === 'Waiting' || t.status === 0);
+                document.getElementById('waitingCountText').innerText = waiting.length;
+
+                // Play soft sound buzzer if waiting count increased
+                if (waiting.length > previousWaitingCount) {
+                    playChimeAlert();
+                }
+                previousWaitingCount = waiting.length;
+
+                if (waiting.length === 0) {
+                    queueList.innerHTML = `
+                    <div style="text-align: center; padding: 4.5rem 2rem; color: var(--text-muted);">
+                        <i class="fa-solid fa-face-smile" style="font-size: 3rem; margin-bottom: 1rem; color: var(--border);"></i>
+                        <h3>All caught up!</h3>
+                        <p style="font-size: 0.9rem; margin-top: 0.25rem;">There are no patients currently waiting in your room.</p>
+                    </div>`;
+                    return;
+                }
+
+                let html = '';
+                waiting.forEach(t => {
+                    html += `
+                    <div class="token-item">
+                        <div>
+                            <span class="token-badge">${t.tokenNumber}</span>
+                            <strong style="margin-left: 1.25rem;">${t.name}</strong>
+                        </div>
+                        <div>
+                            <span class="token-status status-waiting">Waiting</span>
+                        </div>
+                    </div>`;
+                });
+                queueList.innerHTML = html;
+            } catch (err) {
+                console.error("Failed to load doctor queue", err);
+            }
+        }
+
+        // Call Next Button click
+        document.getElementById('callNextBtn').addEventListener('click', async () => {
+            try {
+                const nextToken = await QueueCureAPI.request(`/queue/call-next/${doctorId}`, 'POST', null, true);
+                await renderCurrentSession(nextToken);
+                await loadDoctorQueue();
+            } catch (err) {
+                alert(err.message || "Failed to call next patient.");
+            }
+        });
+
+        // Start consultation click
+        document.getElementById('startSessionBtn').addEventListener('click', async () => {
+            if (!activeToken) return;
+            try {
+                const updated = await QueueCureAPI.request(`/queue/start/${activeToken.id}`, 'POST', null, true);
+                await renderCurrentSession(updated);
+                await loadDoctorQueue();
+            } catch (err) {
+                alert(err.message || "Failed to start consultation.");
+            }
+        });
+
+        // Complete consultation click
+        document.getElementById('completeSessionBtn').addEventListener('click', async () => {
+            if (!activeToken) return;
+            try {
+                await QueueCureAPI.request(`/queue/complete/${activeToken.id}`, 'POST', null, true);
+                await renderCurrentSession(null);
+                await loadDoctorQueue();
+            } catch (err) {
+                alert(err.message || "Failed to complete session.");
+            }
+        });
+
+        // No-show / Skip click
+        document.getElementById('noShowSessionBtn').addEventListener('click', async () => {
+            if (!activeToken) return;
+            const confirmSkip = confirm(`Are you sure you want to skip ${activeToken.name} (${activeToken.tokenNumber}) and mark them as no-show?`);
+            if (confirmSkip) {
+                try {
+                    await QueueCureAPI.request(`/queue/noshow/${activeToken.id}`, 'POST', null, true);
+                    await renderCurrentSession(null);
+                    await loadDoctorQueue();
+                } catch (err) {
+                    alert(err.message || "Failed to skip patient.");
+                }
+            }
+        });
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', async () => {
+            const id = await loadProfile();
+            await loadDoctorQueue();
+
+            // Set up real-time websocket
+            QueueCureRealtime.on("DoctorQueueUpdated", async (updatedDocId) => {
+                if (updatedDocId === id) {
+                    await loadDoctorQueue();
+                }
+            });
+
+            QueueCureRealtime.on("QueueUpdated", async () => {
+                await loadDoctorQueue();
+            });
+
+            // Start connection and join group for specific doctor
+            await QueueCureRealtime.start();
+            await QueueCureRealtime.joinDoctorGroup(id);
+        });
+    </script>
+</body>
+</html>

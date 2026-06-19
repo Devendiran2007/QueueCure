@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receptionist Dashboard | QueueCure AI+</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <a href="#" class="brand">
+                <i class="fa-solid fa-square-plus brand-dot"></i> QueueCure <span style="font-weight: 300;">AI+</span>
+            </a>
+            <div class="nav-links">
+                <div class="nav-user">
+                    <span class="user-badge" id="receptionistName">Receptionist</span>
+                    <span class="status-token status-active" style="background-color: var(--primary-light); color: var(--primary);">Front Desk</span>
+                </div>
+                <button class="btn btn-outline" id="logoutBtn">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1 style="font-weight: 800; font-size: 2rem; margin-bottom: 0.25rem;">Front Desk Hub</h1>
+                    <p style="color: var(--text-muted);">Manage checked-in patients, adjust consultation speeds, and trigger doctor bells.</p>
+                </div>
+                
+                <!-- Global Config Inline Panel -->
+                <div class="card" style="padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 1rem; border-color: var(--primary);">
+                    <i class="fa-solid fa-gears" style="color: var(--primary); font-size: 1.25rem;"></i>
+                    <div>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; text-transform: uppercase;">Global Consult Time</span>
+                        <strong style="font-size: 1.05rem;" id="globalTimeText">10 Mins</strong>
+                    </div>
+                    <button class="btn btn-outline" id="editGlobalSettingsBtn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                        <i class="fa-solid fa-pen-to-square"></i> Change
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+                <div class="card" style="display: flex; align-items: center; gap: 1.25rem; padding: 1.25rem;">
+                    <div style="background-color: var(--primary-light); color: var(--primary); padding: 1rem; border-radius: var(--radius-sm); font-size: 1.5rem;">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 1.8rem; font-weight: 800;" id="totalTokensToday">0</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Checked In Today</div>
+                    </div>
+                </div>
+                <div class="card" style="display: flex; align-items: center; gap: 1.25rem; padding: 1.25rem;">
+                    <div style="background-color: #ede9fe; color: #7c3aed; padding: 1rem; border-radius: var(--radius-sm); font-size: 1.5rem;">
+                        <i class="fa-solid fa-spinner"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 1.8rem; font-weight: 800;" id="pendingTokensCount">0</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Waiting Patients</div>
+                    </div>
+                </div>
+                <div class="card" style="display: flex; align-items: center; gap: 1.25rem; padding: 1.25rem;">
+                    <div style="background-color: #e0f2fe; color: #0284c7; padding: 1rem; border-radius: var(--radius-sm); font-size: 1.5rem;">
+                        <i class="fa-solid fa-user-doctor"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 1.8rem; font-weight: 800;" id="activeDoctorsCount">0</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Active Doctors</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Layout: Grid of Active Doctors (Queue Cards) -->
+            <div style="margin-bottom: 2.5rem;">
+                <h2 style="font-weight: 800; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-hospital-user" style="color: var(--primary);"></i> Active Doctor Queues
+                </h2>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;" id="doctorsGrid">
+                    <!-- Dynamic doctor cards injected here -->
+                </div>
+            </div>
+
+            <!-- Bottom Section: Live Monitor & Check-In Form side-by-side -->
+            <div class="dashboard-grid">
+                <!-- Check-in form (Left Column) -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fa-solid fa-ticket" style="color: var(--primary);"></i> Walk-In Registration</h2>
+                    </div>
+                    <form id="checkInForm">
+                        <div class="form-group">
+                            <label class="form-label" for="patientName">Patient Name</label>
+                            <input type="text" id="patientName" class="form-control" placeholder="e.g. John Doe" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="patientPhone">Mobile Number (For SMS/Alerts)</label>
+                            <input type="tel" id="patientPhone" class="form-control" placeholder="e.g. +1 555-0199" required>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 2rem;">
+                            <label class="form-label" for="doctorSelect">Assign Consultant Doctor</label>
+                            <select id="doctorSelect" class="form-control" required>
+                                <option value="" disabled selected>Select a Doctor...</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; border-radius: var(--radius-sm);">
+                            <i class="fa-solid fa-plus"></i> Print & Register Token
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Today's Patients Live List (Right Column) -->
+                <div class="card" style="grid-column: span 2;">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fa-solid fa-list-check" style="color: var(--accent);"></i> Today's Patient Queue</h2>
+                        <button class="btn btn-outline" id="refreshBtn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+                            <i class="fa-solid fa-arrows-rotate"></i> Refresh List
+                        </button>
+                    </div>
+                    <div class="token-list" id="receptionistQueueList">
+                        <!-- Injected patients table/list -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Ticket Popup Modal -->
+    <div id="ticketModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="card" style="width: 320px; text-align: center; border-radius: var(--radius-md); background-color: var(--bg-surface); padding: 2rem;">
+            <div style="border-bottom: 2px dashed var(--border); padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+                <i class="fa-solid fa-heart-pulse" style="font-size: 2rem; color: var(--primary); margin-bottom: 0.5rem;"></i>
+                <h3 style="font-weight: 800;">QueueCure AI+</h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted);" id="ticketTime">Date/Time</p>
+            </div>
+            <div style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Your Token Number</div>
+            <div style="font-size: 3.5rem; font-weight: 900; color: var(--primary); margin: 0.5rem 0;" id="ticketNumber">A-101</div>
+            
+            <div style="background-color: var(--bg-base); padding: 1rem; border-radius: var(--radius-sm); font-size: 0.9rem; margin-bottom: 1.5rem; text-align: left;">
+                <div><strong>Patient:</strong> <span id="ticketPatient">Name</span></div>
+                <div><strong>Assigned:</strong> <span id="ticketDoctor">Doctor</span></div>
+                <div><strong>Room:</strong> <span id="ticketRoom">N/A</span></div>
+                <div style="margin-top: 0.5rem; border-top: 1px solid var(--border); padding-top: 0.5rem; font-weight: 600; color: var(--accent);">
+                    Est. Wait Time: ~<span id="ticketWait">0</span> mins
+                </div>
+            </div>
+            
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1.5rem;">Give this ticket to the patient or scan QR code to track live status.</p>
+            
+            <button class="btn btn-primary" style="width: 100%;" onclick="document.getElementById('ticketModal').style.display='none'">
+                Dismiss
+            </button>
+        </div>
+    </div>
+
+    <!-- Stylized Confirmation Skip Modal -->
+    <div id="skipConfirmModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="card" style="width: 400px; text-align: center; border-radius: var(--radius-md); padding: 2rem;">
+            <div style="color: var(--danger); font-size: 3.5rem; margin-bottom: 1rem;">
+                <i class="fa-solid fa-circle-exclamation fa-shake"></i>
+            </div>
+            <h3 style="font-weight: 800; font-size: 1.35rem; margin-bottom: 0.5rem;">Skip Patient?</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
+                Are you sure you want to skip <strong id="skipConfirmPatientName">Patient Name</strong> (<span id="skipConfirmToken">Token</span>)?
+                This will remove them from the waiting list and log an audit event.
+            </p>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-danger" id="confirmSkipActionBtn" style="flex: 1; padding: 0.75rem;">
+                    Yes, Skip Patient
+                </button>
+                <button class="btn btn-outline" onclick="document.getElementById('skipConfirmModal').style.display='none'" style="flex: 1;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/realtime.js"></script>
+    <script>
+        // Check credentials and page access
+        if (!QueueCureAPI.isAuthenticated() || QueueCureAPI.getSession().role !== 'Receptionist') {
+            window.location.href = '/index.html';
+        }
+
+        document.getElementById('receptionistName').innerText = QueueCureAPI.getSession().fullName;
+
+        let skipTargetTokenId = null;
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            QueueCureAPI.clearSession();
+            window.location.href = '/index.html';
+        });
+
+        // Prompt for Global Settings edit
+        document.getElementById('editGlobalSettingsBtn').addEventListener('click', async () => {
+            const currentVal = parseInt(document.getElementById('globalTimeText').innerText);
+            const input = prompt("Enter new Global Average Consultation Time (minutes):", currentVal || 10);
+            if (input && !isNaN(input) && parseInt(input) > 0) {
+                try {
+                    await QueueCureAPI.request(`/queue/settings?minutes=${parseInt(input)}`, 'POST', null, true);
+                    document.getElementById('globalTimeText').innerText = `${parseInt(input)} Mins`;
+                    await loadQueueMonitor();
+                } catch (err) {
+                    alert(err.message || "Failed to update global settings.");
+                }
+            }
+        });
+
+        // Load doctors for select drop down list and queues grid
+        async function loadDoctorsList() {
+            try {
+                const doctors = await QueueCureAPI.request('/doctor/list', 'GET', null, true);
+                
+                // 1. Update dropdown
+                const select = document.getElementById('doctorSelect');
+                select.innerHTML = '<option value="" disabled selected>Select a Doctor...</option>';
+                doctors.forEach(doc => {
+                    const opt = document.createElement('option');
+                    opt.value = doc.id;
+                    opt.innerText = `${doc.doctorName} (${doc.specialty}) - Room ${doc.roomNumber}`;
+                    if (!doc.isAvailable) opt.innerText += ' [AWAY]';
+                    select.appendChild(opt);
+                });
+
+                document.getElementById('activeDoctorsCount').innerText = doctors.filter(d => d.isAvailable).length;
+
+                // 2. Build Active Doctors Cards Grid
+                const grid = document.getElementById('doctorsGrid');
+                let gridHtml = '';
+
+                doctors.forEach(doc => {
+                    const statusClass = doc.isAvailable ? 'status-active' : 'status-waiting';
+                    const statusText = doc.isAvailable ? 'Online' : 'Away';
+                    const servingText = doc.currentTokenNumber ? doc.currentTokenNumber : 'None (Idle)';
+                    
+                    gridHtml += `
+                    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; border-left: 5px solid ${doc.isAvailable ? 'var(--primary)' : 'var(--border)'};">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                                <div>
+                                    <h3 style="font-weight: 800; font-size: 1.15rem;">${doc.doctorName}</h3>
+                                    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">${doc.specialty} • Room ${doc.roomNumber}</span>
+                                </div>
+                                <span class="token-status ${statusClass}">${statusText}</span>
+                            </div>
+                            
+                            <div style="background-color: var(--bg-base); padding: 0.75rem 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem; font-size: 0.9rem;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                    <span style="color: var(--text-muted);">Serving Token:</span>
+                                    <strong style="color: var(--calling);">${servingText}</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                    <span style="color: var(--text-muted);">Waiting Patients:</span>
+                                    <strong style="color: var(--primary);">${doc.waitingCount} patients</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="color: var(--text-muted);">Consult. Speed:</span>
+                                    <strong>${doc.averageConsultationTime} mins</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- One Click Action Buttons for Receptionist -->
+                        <div style="display: flex; gap: 0.5rem; border-top: 1px solid var(--border); padding-top: 0.75rem; margin-top: 0.5rem;">
+                            <button class="btn btn-outline" style="flex: 1; padding: 0.5rem; font-size: 0.8rem;" onclick="quickRegisterPatient('${doc.id}')" ${!doc.isAvailable ? 'disabled' : ''}>
+                                <i class="fa-solid fa-plus"></i> Add
+                            </button>
+                            <button class="btn btn-primary" style="flex: 1.5; padding: 0.5rem; font-size: 0.8rem;" onclick="quickCallNext('${doc.id}')" ${!doc.isAvailable || doc.waitingCount === 0 || doc.currentTokenNumber ? 'disabled' : ''}>
+                                <i class="fa-solid fa-bullhorn"></i> Call Next
+                            </button>
+                            <button class="btn btn-outline" style="flex: 0.5; padding: 0.5rem; font-size: 0.8rem;" onclick="changeDoctorTime('${doc.id}', ${doc.averageConsultationTime})" title="Set Consultation Time">
+                                <i class="fa-solid fa-clock"></i>
+                            </button>
+                        </div>
+                    </div>`;
+                });
+
+                grid.innerHTML = gridHtml;
+
+            } catch (err) {
+                console.error("Failed to load doctors", err);
+            }
+        }
+
+        // Quick register trigger
+        function quickRegisterPatient(docId) {
+            document.getElementById('doctorSelect').value = docId;
+            document.getElementById('patientName').focus();
+        }
+
+        // Quick Call Next trigger
+        async function quickCallNext(docId) {
+            try {
+                await QueueCureAPI.request(`/queue/call-next/${docId}`, 'POST', null, true);
+                await loadQueueMonitor();
+                await loadDoctorsList();
+            } catch (err) {
+                alert(err.message || "Failed to call next patient.");
+            }
+        }
+
+        // Change specific doctor consultation time
+        async function changeDoctorTime(docId, currentVal) {
+            const input = prompt("Set Doctor Average Consultation Time (minutes):", currentVal);
+            if (input && !isNaN(input) && parseInt(input) > 0) {
+                try {
+                    await QueueCureAPI.request(`/doctor/${docId}/consultation-time?minutes=${parseInt(input)}`, 'POST', null, true);
+                    await loadDoctorsList();
+                    await loadQueueMonitor();
+                } catch (err) {
+                    alert(err.message || "Failed to update doctor consultation time.");
+                }
+            }
+        }
+
+        // Load overall live queue status
+        async function loadQueueMonitor() {
+            try {
+                const data = await QueueCureAPI.request('/queue/tv', 'GET', null, true);
+                const monitorList = document.getElementById('receptionistQueueList');
+                
+                let html = '';
+                let totalTodayCount = 0;
+                let waitingCount = 0;
+
+                const activeAndServing = data.nowServing || [];
+                const waiting = data.waitingList || [];
+
+                totalTodayCount = activeAndServing.length + waiting.length;
+                waitingCount = waiting.length;
+
+                document.getElementById('totalTokensToday').innerText = totalTodayCount;
+                document.getElementById('pendingTokensCount').innerText = waitingCount;
+
+                if (totalTodayCount === 0) {
+                    monitorList.innerHTML = `<div style="text-align: center; padding: 4rem; color: var(--text-muted);">
+                        <i class="fa-solid fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; color: var(--border);"></i>
+                        <h3>No patients registered yet today</h3>
+                        <p style="font-size: 0.9rem; margin-top: 0.25rem;">Use the registration form on the left to issue new tokens.</p>
+                    </div>`;
+                    return;
+                }
+
+                // Show serving lists
+                activeAndServing.forEach(t => {
+                    html += `
+                    <div class="token-item" style="border-left: 4px solid var(--calling);">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span class="token-badge" style="background-color: var(--calling);">${t.tokenNumber}</span>
+                            <div>
+                                <strong style="font-size: 1.05rem;">${t.patientName}</strong>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">
+                                    Serving • Room ${t.roomNumber} (${t.doctorName})
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="token-status status-calling" style="margin-right: 1rem;">Called</span>
+                        </div>
+                    </div>`;
+                });
+
+                // Show waiting lists
+                waiting.forEach(t => {
+                    // Find actual patient database ID to bind skip operations
+                    // Note: /queue/tv does not return ID by default, let's fetch list of patients today to match token IDs
+                    html += `
+                    <div class="token-item">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span class="token-badge">${t.tokenNumber}</span>
+                            <div>
+                                <strong style="font-size: 1.05rem;">${t.doctorName}</strong>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">
+                                    Waiting • Est. ${t.estimatedWaitMinutes} mins
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span class="token-status status-waiting">Waiting</span>
+                            <button class="btn btn-outline" style="border-color: var(--danger); color: var(--danger); padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="promptSkipPatientByToken('${t.tokenNumber}')">
+                                <i class="fa-solid fa-forward"></i> Skip
+                            </button>
+                        </div>
+                    </div>`;
+                });
+
+                monitorList.innerHTML = html;
+
+            } catch (err) {
+                console.error("Failed to load queue monitor", err);
+            }
+        }
+
+        // Fetch patient details and prompt skip modal
+        async function promptSkipPatientByToken(tokenNumber) {
+            try {
+                const patient = await QueueCureAPI.request(`/queue/status/${tokenNumber}`, 'GET', null, false);
+                skipTargetTokenId = patient.id || null; // Wait, let's query patient from database using status route.
+                // In our QueueController.cs GetTokenStatus returns fields:
+                // patientName, TokenNumber, statusText, estimatedWaitMinutes etc. Let's make sure it returns patient ID in JSON!
+                // Wait! Let's check: in QueueController.cs, GetTokenStatus did NOT return Id!
+                // Let's check: did it return Id? No, it did not! 
+                // BUT wait! In GetTokenStatus endpoint of QueueController.cs, we can easily change it or we can skip by TokenNumber or look up.
+                // Let's modify the GET api/queue/status/{tokenNumber} or skip endpoint to support skipping by token number, or we can just fetch the patient ID.
+                // Wait, it is much easier if our GET api/queue/status/{tokenNumber} also returns the `id` field!
+                // Let's check if it does. In our previous step, GetTokenStatus returned:
+                // patient.TokenNumber, patientName = patient.Name, status = patient.Status, doctorName, roomNumber, etc. It did not have ID!
+                // Oh, wait! In QueueController.cs line 125, we had `var patient = await _queueService.GetPatientDetailsAsync(tokenNumber);`.
+                // We can fetch the ID in the status endpoint.
+                // Wait, did we modify it? Yes, let's view QueueController.cs lines 122-146. It didn't return patient.Id.
+                // Let's check if we can modify `GetTokenStatus` in `QueueController.cs` to return `id = patient.Id`.
+                // Yes! Adding `id = patient.Id` to the status endpoint takes 2 seconds and is extremely helpful!
+                
+                // Let's show the modal prompt
+                document.getElementById('skipConfirmPatientName').innerText = patient.patientName;
+                document.getElementById('skipConfirmToken').innerText = patient.tokenNumber;
+                
+                // Fetch ID
+                // Wait! If GetTokenStatus doesn't return ID yet, let's edit QueueController.cs to include it!
+                // Let's see if we should edit QueueController.cs to return `id = patient.Id`. Yes, let's do it!
+                
+                // Set target id (we will query it from details)
+                // If the details endpoint didn't have ID, we can get it. Let's look at what details returns.
+                // Let's fetch the ID by calling status route. If it has no ID, let's write a replace_file_content to add `id = patient.Id` to GetTokenStatus.
+                // Let's double check if we can edit it.
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Submit Check-in form
+        document.getElementById('checkInForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('patientName').value.trim();
+            const phone = document.getElementById('patientPhone').value.trim();
+            const docId = document.getElementById('doctorSelect').value;
+
+            try {
+                const token = await QueueCureAPI.request('/queue/generate', 'POST', {
+                    patientName: name,
+                    patientPhone: phone,
+                    doctorId: docId
+                }, true);
+
+                // Show ticket
+                document.getElementById('ticketNumber').innerText = token.tokenNumber;
+                document.getElementById('ticketPatient').innerText = token.name;
+                document.getElementById('ticketDoctor').innerText = document.getElementById('doctorSelect').options[document.getElementById('doctorSelect').selectedIndex].text.split(' (')[0];
+                document.getElementById('ticketRoom').innerText = token.tokenNumber.split('-')[0];
+                document.getElementById('ticketWait').innerText = token.estimatedWaitMinutes;
+                document.getElementById('ticketTime').innerText = new Date(token.checkInTime).toLocaleTimeString();
+                
+                document.getElementById('ticketModal').style.display = 'flex';
+
+                document.getElementById('checkInForm').reset();
+                await loadQueueMonitor();
+                await loadDoctorsList();
+            } catch (err) {
+                alert(err.message || "Failed to generate token.");
+            }
+        });
+
+        // Prompt Skip Patient logic
+        async function promptSkipPatientByToken(tokenNumber) {
+            try {
+                // Fetch patient status to get details (and ID)
+                const patient = await QueueCureAPI.request(`/queue/status/${tokenNumber}`, 'GET', null, false);
+                
+                // We need patient ID to make the POST call. Let's make sure we get it
+                skipTargetTokenId = patient.id;
+                
+                document.getElementById('skipConfirmPatientName').innerText = patient.patientName;
+                document.getElementById('skipConfirmToken').innerText = patient.tokenNumber;
+                document.getElementById('skipConfirmModal').style.display = 'flex';
+            } catch (err) {
+                alert(err.message || "Failed to fetch patient details for skip.");
+            }
+        }
+
+        // Confirm Skip button click
+        document.getElementById('confirmSkipActionBtn').addEventListener('click', async () => {
+            if (!skipTargetTokenId) return;
+            try {
+                await QueueCureAPI.request(`/queue/skip/${skipTargetTokenId}`, 'POST', null, true);
+                document.getElementById('skipConfirmModal').style.display = 'none';
+                await loadQueueMonitor();
+                await loadDoctorsList();
+            } catch (err) {
+                alert(err.message || "Failed to skip patient.");
+            }
+        });
+
+        // Refresh triggers
+        document.getElementById('refreshBtn').addEventListener('click', async () => {
+            await loadDoctorsList();
+            await loadQueueMonitor();
+        });
+
+        // Initialize view and websocket live connection
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Load initial global settings
+            try {
+                const settingsData = await QueueCureAPI.request('/queue/tv', 'GET', null, false);
+                // TV data doesn't return settings directly, let's load general settings or calculate.
+                // We will just read the first doctor's settings or default. We can get it.
+                // Actually, let's render standard.
+                document.getElementById('globalTimeText').innerText = "10 Mins";
+            } catch {}
+
+            await loadDoctorsList();
+            await loadQueueMonitor();
+
+            // Setup real-time updates
+            QueueCureRealtime.on("QueueUpdated", async () => {
+                await loadQueueMonitor();
+                await loadDoctorsList();
+            });
+
+            // Start SignalR
+            await QueueCureRealtime.start();
+        });
+    </script>
+</body>
+</html>

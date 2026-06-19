@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waiting Room TV Board | QueueCure AI+</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #0b0f19;
+        }
+    </style>
+</head>
+<body class="tv-layout">
+    <!-- Header -->
+    <header class="tv-header">
+        <div class="brand" style="font-size: 1.8rem; color: #ffffff;">
+            <i class="fa-solid fa-square-plus" style="color: var(--accent);"></i> QueueCure <span style="font-weight: 300; color: #94a3b8;">AI+</span>
+        </div>
+        <div style="text-align: right;">
+            <h2 id="tvTime" style="font-weight: 800; font-size: 1.8rem;">12:00:00 PM</h2>
+            <p id="tvDate" style="color: var(--text-muted); font-size: 0.95rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Friday, June 19, 2026</p>
+        </div>
+    </header>
+
+    <!-- TV Display Board -->
+    <main class="tv-grid">
+        
+        <!-- Now Serving (Left Panel) -->
+        <section class="tv-serving-panel">
+            <h2 style="font-weight: 800; font-size: 2.2rem; color: #ffffff; margin-bottom: 2rem; border-bottom: 2px solid #1e293b; padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                <i class="fa-solid fa-bullhorn" style="color: #a855f7;"></i> Now Serving
+            </h2>
+            
+            <div id="tvNowServingContainer" style="display: flex; flex-direction: column; gap: 1.5rem; flex: 1; justify-content: center;">
+                <!-- Serving tickets injected here -->
+                <div style="text-align: center; color: var(--text-muted); padding: 4rem;">
+                    <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 3rem; margin-bottom: 1rem; color: var(--accent);"></i>
+                    <p style="font-size: 1.2rem;">Establishing connection to serving board...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Waiting Queue (Right Panel) -->
+        <section class="tv-waiting-panel">
+            <h2 style="font-weight: 800; font-size: 1.8rem; color: #ffffff; margin-bottom: 1.5rem; border-bottom: 2px solid #1e293b; padding-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                <i class="fa-solid fa-hourglass-half" style="color: var(--accent);"></i> Waiting Queue
+            </h2>
+            
+            <div id="tvWaitingList" class="token-list" style="max-height: 70vh; overflow-y: hidden;">
+                <!-- Injected lists -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Banner Info -->
+    <footer style="background-color: #141b2d; padding: 1.25rem; text-align: center; border-top: 2px solid #1e293b; font-size: 1.1rem; color: var(--text-muted); display: flex; justify-content: space-around; font-weight: 600;">
+        <span><i class="fa-solid fa-qrcode" style="color: var(--accent); margin-right: 0.5rem;"></i> Track your live token status on your phone by visiting: <strong>/patient/tracker.html</strong></span>
+        <span><i class="fa-solid fa-circle-check" style="color: var(--success); margin-right: 0.5rem;"></i> Please keep your tickets handy.</span>
+    </footer>
+
+    <!-- SignalR client -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/realtime.js"></script>
+    <script>
+        // Update Time
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('tvTime').innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            document.getElementById('tvDate').innerText = now.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Synth Chime using Web Audio API (Ding Dong bell tone)
+        function playChime() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+
+                // Bell Tone Part 1 (Ding)
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+                gain1.gain.setValueAtTime(0.5, ctx.currentTime);
+                gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.2);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start();
+                osc1.stop(ctx.currentTime + 1.2);
+
+                // Bell Tone Part 2 (Dong)
+                setTimeout(() => {
+                    const osc2 = ctx.createOscillator();
+                    const gain2 = ctx.createGain();
+                    osc2.type = 'sine';
+                    osc2.frequency.setValueAtTime(440.00, ctx.currentTime); // A4
+                    gain2.gain.setValueAtTime(0.5, ctx.currentTime);
+                    gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5);
+                    osc2.connect(gain2);
+                    gain2.connect(ctx.destination);
+                    osc2.start();
+                    osc2.stop(ctx.currentTime + 1.5);
+                }, 400);
+
+            } catch (e) {
+                console.error("Audio Context playback blocked/failed", e);
+            }
+        }
+
+        // Load data from Web API
+        async function fetchTVData() {
+            try {
+                const data = await QueueCureAPI.request('/queue/tv', 'GET', null, false);
+                
+                // 1. Serving
+                const servingContainer = document.getElementById('tvNowServingContainer');
+                const serving = data.nowServing || [];
+
+                if (serving.length === 0) {
+                    servingContainer.innerHTML = `
+                    <div style="text-align: center; color: var(--text-muted); padding: 4rem; background-color: rgba(255,255,255,0.02); border-radius: var(--radius-md);">
+                        <i class="fa-solid fa-square-minus" style="font-size: 4rem; margin-bottom: 1rem; color: #1e293b;"></i>
+                        <h3>No Active Consultations</h3>
+                        <p style="margin-top: 0.5rem;">All doctors are currently free or away.</p>
+                    </div>`;
+                } else {
+                    let html = '';
+                    serving.forEach(t => {
+                        html += `
+                        <div class="tv-serving-card">
+                            <div style="font-size: 1.1rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Ticket Number</div>
+                            <div class="tv-serving-token">${t.tokenNumber}</div>
+                            <h3 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem;">${t.patientName}</h3>
+                            <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 1rem; font-size: 1.3rem;">
+                                <span><i class="fa-solid fa-door-open" style="color: #a855f7;"></i> Room: <strong>${t.roomNumber}</strong></span>
+                                <span><i class="fa-solid fa-user-doctor" style="color: var(--accent);"></i> <strong>${t.doctorName}</strong></span>
+                            </div>
+                        </div>`;
+                    });
+                    servingContainer.innerHTML = html;
+                }
+
+                // 2. Waiting List
+                const waitingListContainer = document.getElementById('tvWaitingList');
+                const waiting = data.waitingList || [];
+
+                if (waiting.length === 0) {
+                    waitingListContainer.innerHTML = `
+                    <div style="text-align: center; padding: 4rem; color: var(--text-muted);">
+                        No waiting patients.
+                    </div>`;
+                } else {
+                    let html = '';
+                    waiting.forEach(t => {
+                        html += `
+                        <div class="token-item" style="background-color: #141b2d; border-color: #1e293b; color: #ffffff;">
+                            <div>
+                                <span class="token-badge" style="background-color: var(--accent); color: #0b0f19;">${t.tokenNumber}</span>
+                                <span style="font-size: 1.2rem; font-weight: 700; margin-left: 1.5rem;">${t.doctorName}</span>
+                            </div>
+                            <div>
+                                <span class="token-status status-waiting" style="font-size: 0.9rem; padding: 0.4rem 1rem;">Est: ~${t.estimatedWaitMinutes} mins</span>
+                            </div>
+                        </div>`;
+                    });
+                    waitingListContainer.innerHTML = html;
+                }
+
+            } catch (err) {
+                console.error("Error loading TV lobby data", err);
+            }
+        }
+
+        // Initialize and listen to live events
+        window.addEventListener('DOMContentLoaded', async () => {
+            await fetchTVData();
+
+            // Set up real-time websocket
+            QueueCureRealtime.on("QueueUpdated", async () => {
+                await fetchTVData();
+            });
+
+            QueueCureRealtime.on("TokenCalled", async (data) => {
+                playChime();
+                await fetchTVData();
+            });
+
+            // Start SignalR
+            await QueueCureRealtime.start();
+        });
+    </script>
+</body>
+</html>
