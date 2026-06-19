@@ -104,6 +104,16 @@
                             <label class="form-label" for="patientPhone">Mobile Number (For SMS/Alerts)</label>
                             <input type="tel" id="patientPhone" class="form-control" placeholder="e.g. +1 555-0199" required>
                         </div>
+                        <div class="form-group">
+                            <label class="form-label" for="patientCategory">Visit Category / Chief Complaint</label>
+                            <select id="patientCategory" class="form-control" required>
+                                <option value="Fever">Fever</option>
+                                <option value="GeneralCheckup" selected>General Checkup</option>
+                                <option value="DiabetesReview">Diabetes Review</option>
+                                <option value="CardiologyConsultation">Cardiology Consultation</option>
+                                <option value="FollowUp">Follow Up</option>
+                            </select>
+                        </div>
                         <div class="form-group" style="margin-bottom: 2rem;">
                             <label class="form-label" for="doctorSelect">Assign Consultant Doctor</label>
                             <select id="doctorSelect" class="form-control" required>
@@ -374,16 +384,16 @@
 
                 // Show waiting lists
                 waiting.forEach(t => {
-                    // Find actual patient database ID to bind skip operations
-                    // Note: /queue/tv does not return ID by default, let's fetch list of patients today to match token IDs
+                    const categoryDisplay = t.category ? t.category.replace(/([A-Z])/g, ' $1').trim() : 'General Checkup';
                     html += `
                     <div class="token-item">
                         <div style="display: flex; align-items: center; gap: 1rem;">
                             <span class="token-badge">${t.tokenNumber}</span>
                             <div>
-                                <strong style="font-size: 1.05rem;">${t.doctorName}</strong>
+                                <strong style="font-size: 1.05rem;">${t.patientName || 'Patient'}</strong>
+                                <span style="font-size: 0.75rem; background-color: var(--primary-light); color: var(--primary); padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600; margin-left: 0.5rem;">${categoryDisplay}</span>
                                 <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">
-                                    Waiting • Est. ${t.estimatedWaitMinutes} mins
+                                    Waiting for ${t.doctorName} • Est. ${t.estimatedWaitMinutes} mins
                                 </div>
                             </div>
                         </div>
@@ -445,13 +455,15 @@
             e.preventDefault();
             const name = document.getElementById('patientName').value.trim();
             const phone = document.getElementById('patientPhone').value.trim();
+            const category = document.getElementById('patientCategory').value;
             const docId = document.getElementById('doctorSelect').value;
 
             try {
                 const token = await QueueCureAPI.request('/queue/generate', 'POST', {
                     patientName: name,
                     patientPhone: phone,
-                    doctorId: docId
+                    doctorId: docId,
+                    category: category
                 }, true);
 
                 // Show ticket

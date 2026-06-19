@@ -7,13 +7,14 @@ namespace QueueCure.Services
 {
     public interface IQueueService
     {
-        Task<Patient> GenerateTokenAsync(string patientName, string patientPhone, Guid doctorId);
+        Task<Patient> GenerateTokenAsync(string patientName, string patientPhone, Guid doctorId, VisitCategory category);
         Task<Patient?> CallNextTokenAsync(Guid doctorId);
         Task<Patient?> StartConsultationAsync(Guid patientId);
         Task<Patient?> CompleteConsultationAsync(Guid patientId);
         Task<Patient?> SkipPatientAsync(Guid patientId);
         
         Task<IEnumerable<Patient>> GetActiveQueueForDoctorAsync(Guid doctorId);
+        Task<double> CalculateEstimatedWaitTimeAsync(Guid doctorId, DateTime checkInTime);
         Task<Patient?> GetPatientDetailsAsync(string tokenNumber);
         Task<IEnumerable<Doctor>> GetDoctorsStatusAsync();
         Task<object> GetTVDashboardDataAsync();

@@ -10,6 +10,7 @@ namespace QueueCure.Models
         public string TokenNumber { get; set; } = string.Empty;
         public DateTime CheckInTime { get; set; } = DateTime.UtcNow;
         public PatientStatus Status { get; set; } = PatientStatus.Waiting;
+        public VisitCategory Category { get; set; } = VisitCategory.GeneralCheckup;
 
         // Foreign key to Doctor
         public Guid DoctorId { get; set; }

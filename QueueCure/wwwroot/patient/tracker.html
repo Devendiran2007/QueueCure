@@ -97,6 +97,10 @@
                     <strong id="displayPatientName">Name</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
+                    <span style="color: var(--text-muted); font-weight: 500;">Visit Category</span>
+                    <strong id="displayCategory">General Checkup</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
                     <span style="color: var(--text-muted); font-weight: 500;">Assigned Room</span>
                     <strong id="displayRoomNumber" style="color: var(--primary);">Room N/A</strong>
                 </div>
@@ -211,6 +215,8 @@
                 document.getElementById('displayTokenNumber').innerText = data.tokenNumber;
                 document.getElementById('displayServingToken').innerText = data.currentTokenBeingServed;
                 document.getElementById('displayPatientName').innerText = data.patientName;
+                const categoryDisplay = data.category ? data.category.replace(/([A-Z])/g, ' $1').trim() : 'General Checkup';
+                document.getElementById('displayCategory').innerText = categoryDisplay;
                 document.getElementById('displayDoctorName').innerText = data.doctorName;
                 document.getElementById('displayRoomNumber').innerText = `Room ${data.roomNumber}`;
 

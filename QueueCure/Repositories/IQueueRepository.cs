@@ -17,6 +17,7 @@ namespace QueueCure.Repositories
         Task<int> GetWaitingCountBeforePatientAsync(Guid doctorId, DateTime checkInTime);
         Task AddPatientAsync(Patient patient);
         Task UpdatePatientAsync(Patient patient);
+        Task<double> GetAverageConsultationDurationAsync(VisitCategory category);
 
         // Doctor Queries
         Task<Doctor?> GetDoctorByIdAsync(Guid doctorId);

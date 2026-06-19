@@ -189,5 +189,63 @@ namespace QueueCure.Repositories
             _context.QueueSettings.Update(settings);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<double> GetAverageConsultationDurationAsync(VisitCategory category)
+        {
+            var completedPatients = await _context.Patients
+                .Where(p => p.Category == category && p.Status == PatientStatus.Completed)
+                .Select(p => p.Id)
+                .ToListAsync();
+
+            if (!completedPatients.Any())
+            {
+                return category switch
+                {
+                    VisitCategory.Fever => 8.0,
+                    VisitCategory.GeneralCheckup => 12.0,
+                    VisitCategory.DiabetesReview => 15.0,
+                    VisitCategory.CardiologyConsultation => 20.0,
+                    VisitCategory.FollowUp => 5.0,
+                    _ => 10.0
+                };
+            }
+
+            var events = await _context.QueueEvents
+                .Where(e => completedPatients.Contains(e.PatientId) && 
+                            (e.EventType == "Completed" || e.EventType == "Started" || e.EventType == "Called"))
+                .ToListAsync();
+
+            var eventsByPatient = events.GroupBy(e => e.PatientId);
+
+            var durations = new List<double>();
+            foreach (var group in eventsByPatient)
+            {
+                var completedEvent = group.FirstOrDefault(e => e.EventType == "Completed");
+                if (completedEvent == null) continue;
+
+                var startEvent = group.FirstOrDefault(e => e.EventType == "Started") 
+                                 ?? group.FirstOrDefault(e => e.EventType == "Called");
+
+                if (startEvent != null && completedEvent.Timestamp > startEvent.Timestamp)
+                {
+                    durations.Add((completedEvent.Timestamp - startEvent.Timestamp).TotalMinutes);
+                }
+            }
+
+            if (!durations.Any())
+            {
+                return category switch
+                {
+                    VisitCategory.Fever => 8.0,
+                    VisitCategory.GeneralCheckup => 12.0,
+                    VisitCategory.DiabetesReview => 15.0,
+                    VisitCategory.CardiologyConsultation => 20.0,
+                    VisitCategory.FollowUp => 5.0,
+                    _ => 10.0
+                };
+            }
+
+            return durations.Average();
+        }
     }
 }
