@@ -251,6 +251,7 @@ namespace QueueCure.Services
                     patientName = p.Name,
                     category = p.Category.ToString(),
                     isEmergency = p.IsEmergency,
+                    isRestored = p.IsRestored,
                     doctorName = doctor?.Name ?? "Doctor",
                     estimatedWaitMinutes = estimatedWaitMinutes
                 });
@@ -336,6 +337,36 @@ namespace QueueCure.Services
                     Timestamp = DateTime.UtcNow
                 };
                 await _queueRepository.AddQueueEventAsync(emergencyEvent);
+
+                // Broadcast live updates
+                await _hubContext.Clients.All.SendAsync("QueueUpdated");
+                await _hubContext.Clients.Group(patient.DoctorId.ToString()).SendAsync("DoctorQueueUpdated", patient.DoctorId);
+            }
+
+            return patient;
+        }
+
+        public async Task<Patient?> RestorePatientAsync(Guid patientId)
+        {
+            var patient = await _queueRepository.GetPatientByIdAsync(patientId);
+            if (patient == null) return null;
+
+            if (patient.Status == PatientStatus.Skipped)
+            {
+                patient.Status = PatientStatus.Waiting;
+                patient.IsRestored = true;
+                patient.RestoredTime = DateTime.UtcNow;
+                
+                await _queueRepository.UpdatePatientAsync(patient);
+
+                // Log Restored Event
+                var restoreEvent = new QueueEvent
+                {
+                    PatientId = patient.Id,
+                    EventType = "Restored",
+                    Timestamp = DateTime.UtcNow
+                };
+                await _queueRepository.AddQueueEventAsync(restoreEvent);
 
                 // Broadcast live updates
                 await _hubContext.Clients.All.SendAsync("QueueUpdated");

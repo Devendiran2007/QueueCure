@@ -36,16 +36,52 @@ namespace QueueCure.Repositories
 
         public async Task<IEnumerable<Patient>> GetActivePatientsForDoctorAsync(Guid doctorId)
         {
-            return await _context.Patients
+            var patients = await _context.Patients
                 .Include(p => p.Doctor)
                 .ThenInclude(d => d!.User)
                 .Where(p => p.DoctorId == doctorId && 
                             (p.Status == PatientStatus.Waiting || 
                              p.Status == PatientStatus.InConsultation))
-                .OrderBy(p => p.Status == PatientStatus.InConsultation ? 0 : 1)
-                .ThenBy(p => p.IsEmergency ? 0 : 1)
-                .ThenBy(p => p.CheckInTime)
                 .ToListAsync();
+
+            // Ongoing patient first
+            var ongoing = patients.Where(p => p.Status == PatientStatus.InConsultation).ToList();
+            
+            // Waiting patients
+            var waiting = patients.Where(p => p.Status == PatientStatus.Waiting).ToList();
+
+            // Emergency waiting
+            var emergencies = waiting.Where(p => p.IsEmergency).OrderBy(p => p.CheckInTime).ToList();
+
+            // Standard waiting (excluding emergencies and restored)
+            var standards = waiting.Where(p => !p.IsEmergency && !p.IsRestored).OrderBy(p => p.CheckInTime).ToList();
+
+            // Restored waiting
+            var restored = waiting.Where(p => !p.IsEmergency && p.IsRestored).OrderBy(p => p.RestoredTime ?? p.CheckInTime).ToList();
+
+            // Build list:
+            var result = new List<Patient>();
+            result.AddRange(ongoing);
+            result.AddRange(emergencies);
+
+            if (standards.Any())
+            {
+                // Take the first standard waiting patient
+                result.Add(standards.First());
+                
+                // Then add all restored patients
+                result.AddRange(restored);
+                
+                // Then add the remaining standard waiting patients
+                result.AddRange(standards.Skip(1));
+            }
+            else
+            {
+                // No standard waiting patients, just add restored
+                result.AddRange(restored);
+            }
+
+            return result;
         }
 
         public async Task<IEnumerable<Patient>> GetPatientsByStatusAsync(PatientStatus status)

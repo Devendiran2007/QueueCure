@@ -81,6 +81,11 @@
                 <i class="fa-solid fa-circle-exclamation fa-shake"></i> Priority Queue Placement Active (Emergency Status)
             </div>
 
+            <!-- Restored Alert Banner -->
+            <div id="restoredPriorityAlert" style="display: none; background-color: #e0e7ff; border: 1px solid #c7d2fe; color: #4338ca; padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; text-align: center; font-weight: 700; font-size: 0.95rem;">
+                <i class="fa-solid fa-clock-rotate-left"></i> Restored Token: Fair Recovery Priority Active
+            </div>
+
             <!-- Wait Status Grid info cards -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                 <!-- Now Serving -->
@@ -233,6 +238,13 @@
                     document.getElementById('emergencyPriorityAlert').style.display = 'block';
                 } else {
                     document.getElementById('emergencyPriorityAlert').style.display = 'none';
+                }
+
+                // Toggle restored alert banner
+                if (data.isRestored && !data.isEmergency) {
+                    document.getElementById('restoredPriorityAlert').style.display = 'block';
+                } else {
+                    document.getElementById('restoredPriorityAlert').style.display = 'none';
                 }
 
                 // Calculate and format recommended arrival window in local timezone

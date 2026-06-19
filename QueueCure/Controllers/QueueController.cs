@@ -274,6 +274,47 @@ namespace QueueCure.Controllers
             }
             return Ok(patient);
         }
+
+        [HttpGet("history/skipped")]
+        [Authorize(Roles = "Receptionist,Doctor")]
+        public async Task<IActionResult> GetSkippedPatients()
+        {
+            var today = DateTime.UtcNow.Date;
+            var allSkipped = await _queueRepository.GetPatientsByStatusAsync(PatientStatus.Skipped);
+            var todaySkipped = allSkipped.Where(p => p.CheckInTime >= today).OrderByDescending(p => p.CheckInTime).ToList();
+
+            var result = new System.Collections.Generic.List<object>();
+            foreach (var p in todaySkipped)
+            {
+                var events = await _queueRepository.GetEventsByPatientIdAsync(p.Id);
+                var skipEvent = events.LastOrDefault(e => e.EventType == "Skipped" || e.EventType == "Cancelled");
+
+                result.Add(new
+                {
+                    id = p.Id,
+                    tokenNumber = p.TokenNumber,
+                    patientName = p.Name,
+                    phoneNumber = p.PhoneNumber,
+                    category = p.Category.ToString(),
+                    doctorName = p.Doctor?.Name ?? "Doctor",
+                    skippedTime = skipEvent?.Timestamp ?? p.CheckInTime
+                });
+            }
+
+            return Ok(result);
+        }
+
+        [HttpPost("restore/{patientId}")]
+        [Authorize(Roles = "Receptionist,Doctor")]
+        public async Task<IActionResult> RestorePatient(Guid patientId)
+        {
+            var patient = await _queueService.RestorePatientAsync(patientId);
+            if (patient == null)
+            {
+                return NotFound(new { message = "Patient not found or cannot be restored." });
+            }
+            return Ok(patient);
+        }
     }
 
     public class GenerateTokenDto

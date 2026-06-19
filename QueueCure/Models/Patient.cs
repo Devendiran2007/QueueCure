@@ -12,6 +12,8 @@ namespace QueueCure.Models
         public PatientStatus Status { get; set; } = PatientStatus.Waiting;
         public VisitCategory Category { get; set; } = VisitCategory.GeneralCheckup;
         public bool IsEmergency { get; set; } = false;
+        public bool IsRestored { get; set; } = false;
+        public DateTime? RestoredTime { get; set; }
 
         // Foreign key to Doctor
         public Guid DoctorId { get; set; }

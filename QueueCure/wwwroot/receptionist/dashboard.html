@@ -90,46 +90,61 @@
 
             <!-- Bottom Section: Live Monitor & Check-In Form side-by-side -->
             <div class="dashboard-grid">
-                <!-- Check-in form (Left Column) -->
-                <div class="card">
-                    <div class="card-header">
-                        <h2 class="card-title"><i class="fa-solid fa-ticket" style="color: var(--primary);"></i> Walk-In Registration</h2>
+                <!-- Left Column (Stack check-in and recovery) -->
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <!-- Check-in form -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title"><i class="fa-solid fa-ticket" style="color: var(--primary);"></i> Walk-In Registration</h2>
+                        </div>
+                        <form id="checkInForm">
+                            <div class="form-group">
+                                <label class="form-label" for="patientName">Patient Name</label>
+                                <input type="text" id="patientName" class="form-control" placeholder="e.g. John Doe" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="patientPhone">Mobile Number (For SMS/Alerts)</label>
+                                <input type="tel" id="patientPhone" class="form-control" placeholder="e.g. +1 555-0199" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="patientCategory">Visit Category / Chief Complaint</label>
+                                <select id="patientCategory" class="form-control" required>
+                                    <option value="Fever">Fever</option>
+                                    <option value="GeneralCheckup" selected>General Checkup</option>
+                                    <option value="DiabetesReview">Diabetes Review</option>
+                                    <option value="CardiologyConsultation">Cardiology Consultation</option>
+                                    <option value="FollowUp">Follow Up</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 2rem;">
+                                <label class="form-label" for="doctorSelect">Assign Consultant Doctor</label>
+                                <select id="doctorSelect" class="form-control" required>
+                                    <option value="" disabled selected>Select a Doctor...</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 2rem; background-color: #fee2e2; padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid #fca5a5;">
+                                <input type="checkbox" id="patientEmergency" style="width: 1.2rem; height: 1.2rem; cursor: pointer;">
+                                <label for="patientEmergency" style="font-weight: 700; color: #b91c1c; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; margin: 0; user-select: none;">
+                                    <i class="fa-solid fa-circle-exclamation fa-fade"></i> Emergency Priority Check-In
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; border-radius: var(--radius-sm);">
+                                <i class="fa-solid fa-plus"></i> Print & Register Token
+                            </button>
+                        </form>
                     </div>
-                    <form id="checkInForm">
-                        <div class="form-group">
-                            <label class="form-label" for="patientName">Patient Name</label>
-                            <input type="text" id="patientName" class="form-control" placeholder="e.g. John Doe" required>
+
+                    <!-- Recovery Queue Panel -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title"><i class="fa-solid fa-clock-rotate-left" style="color: var(--success);"></i> Recovery Queue</h2>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label" for="patientPhone">Mobile Number (For SMS/Alerts)</label>
-                            <input type="tel" id="patientPhone" class="form-control" placeholder="e.g. +1 555-0199" required>
+                        <div id="receptionistRecoveryList" class="token-list" style="max-height: 350px; overflow-y: auto;">
+                            <div style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+                                No skipped patients today.
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label" for="patientCategory">Visit Category / Chief Complaint</label>
-                            <select id="patientCategory" class="form-control" required>
-                                <option value="Fever">Fever</option>
-                                <option value="GeneralCheckup" selected>General Checkup</option>
-                                <option value="DiabetesReview">Diabetes Review</option>
-                                <option value="CardiologyConsultation">Cardiology Consultation</option>
-                                <option value="FollowUp">Follow Up</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="margin-bottom: 2rem;">
-                            <label class="form-label" for="doctorSelect">Assign Consultant Doctor</label>
-                            <select id="doctorSelect" class="form-control" required>
-                                <option value="" disabled selected>Select a Doctor...</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 2rem; background-color: #fee2e2; padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid #fca5a5;">
-                            <input type="checkbox" id="patientEmergency" style="width: 1.2rem; height: 1.2rem; cursor: pointer;">
-                            <label for="patientEmergency" style="font-weight: 700; color: #b91c1c; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; margin: 0; user-select: none;">
-                                <i class="fa-solid fa-circle-exclamation fa-fade"></i> Emergency Priority Check-In
-                            </label>
-                        </div>
-                        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; border-radius: var(--radius-sm);">
-                            <i class="fa-solid fa-plus"></i> Print & Register Token
-                        </button>
-                    </form>
+                    </div>
                 </div>
 
                 <!-- Today's Patients Live List (Right Column) -->
@@ -391,8 +406,31 @@
                 // Show waiting lists
                 waiting.forEach(t => {
                     const categoryDisplay = t.category ? t.category.replace(/([A-Z])/g, ' $1').trim() : 'General Checkup';
-                    const itemStyle = t.isEmergency ? 'border-left: 4px solid var(--danger); background-color: #fff5f5;' : '';
-                    const emergencyBadge = t.isEmergency ? `<span style="font-size: 0.75rem; background-color: var(--danger); color: white; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 700; margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-circle-exclamation fa-fade"></i> EMERGENCY</span>` : '';
+                    
+                    let itemStyle = '';
+                    let badgeStyle = '';
+                    let restoredBadge = '';
+                    let emergencyBadge = '';
+                    let statusText = 'Waiting';
+                    let statusClass = 'status-waiting';
+                    let statusStyle = '';
+
+                    if (t.isEmergency) {
+                        itemStyle = 'border-left: 4px solid var(--danger); background-color: #fff5f5;';
+                        badgeStyle = 'background-color: var(--danger); color: white;';
+                        emergencyBadge = `<span style="font-size: 0.75rem; background-color: var(--danger); color: white; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 700; margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-circle-exclamation fa-fade"></i> EMERGENCY</span>`;
+                        statusText = 'Priority';
+                        statusClass = 'status-calling';
+                        statusStyle = 'background-color: var(--danger); color: white;';
+                    } else if (t.isRestored) {
+                        itemStyle = 'border-left: 4px solid #6366f1; background-color: #f5f3ff;';
+                        badgeStyle = 'background-color: #6366f1; color: white;';
+                        restoredBadge = `<span style="font-size: 0.75rem; background-color: #6366f1; color: white; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 700; margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-clock-rotate-left"></i> RESTORED</span>`;
+                        statusText = 'Recovered';
+                        statusClass = 'status-active';
+                        statusStyle = 'background-color: #6366f1; color: white;';
+                    }
+
                     const emergencyButton = !t.isEmergency ? `
                             <button class="btn btn-outline" style="border-color: var(--danger); color: var(--danger); padding: 0.3rem 0.6rem; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.25rem;" onclick="markEmergencyById('${t.id}')">
                                 <i class="fa-solid fa-truck-medical"></i> Elevate
@@ -401,18 +439,19 @@
                     html += `
                     <div class="token-item" style="${itemStyle}">
                         <div style="display: flex; align-items: center; gap: 1rem;">
-                            <span class="token-badge" style="${t.isEmergency ? 'background-color: var(--danger); color: white;' : ''}">${t.tokenNumber}</span>
+                            <span class="token-badge" style="${badgeStyle}">${t.tokenNumber}</span>
                             <div>
                                 <strong style="font-size: 1.05rem;">${t.patientName || 'Patient'}</strong>
                                 <span style="font-size: 0.75rem; background-color: var(--primary-light); color: var(--primary); padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600; margin-left: 0.5rem;">${categoryDisplay}</span>
                                 ${emergencyBadge}
+                                ${restoredBadge}
                                 <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">
                                     Waiting for ${t.doctorName} • Est. ${t.estimatedWaitMinutes} mins
                                 </div>
                             </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span class="token-status ${t.isEmergency ? 'status-calling' : 'status-waiting'}" style="${t.isEmergency ? 'background-color: var(--danger); color: white;' : ''}">${t.isEmergency ? 'Priority' : 'Waiting'}</span>
+                            <span class="token-status ${statusClass}" style="${statusStyle}">${statusText}</span>
                             ${emergencyButton}
                             <button class="btn btn-outline" style="border-color: var(--danger); color: var(--danger); padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="promptSkipPatientByToken('${t.tokenNumber}')">
                                 <i class="fa-solid fa-forward"></i> Skip
@@ -422,6 +461,7 @@
                 });
 
                 monitorList.innerHTML = html;
+                await loadRecoveryQueue();
 
             } catch (err) {
                 console.error("Failed to load queue monitor", err);
@@ -549,6 +589,58 @@
             }
         }
 
+        async function loadRecoveryQueue() {
+            try {
+                const skipped = await QueueCureAPI.request('/queue/history/skipped', 'GET', null, true);
+                const recoveryList = document.getElementById('receptionistRecoveryList');
+
+                if (skipped.length === 0) {
+                    recoveryList.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+                        No skipped patients today.
+                    </div>`;
+                    return;
+                }
+
+                let html = '';
+                skipped.forEach(t => {
+                    const skipTime = new Date(t.skippedTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const categoryDisplay = t.category ? t.category.replace(/([A-Z])/g, ' $1').trim() : 'General Checkup';
+
+                    html += `
+                    <div class="token-item" style="border-left: 4px solid var(--text-muted); padding: 0.75rem 1rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem; flex: 1;">
+                            <span class="token-badge" style="background-color: var(--border); color: var(--text-muted); font-size: 0.85rem; padding: 0.2rem 0.5rem; border-radius: 4px;">${t.tokenNumber}</span>
+                            <div>
+                                <strong style="font-size: 0.95rem;">${t.patientName}</strong>
+                                <span style="font-size: 0.7rem; background-color: var(--bg-base); color: var(--text-muted); padding: 0.1rem 0.3rem; border-radius: 4px;">${categoryDisplay}</span>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem;">
+                                    Skipped at ${skipTime} • Dr. ${t.doctorName.split('. ')[1] || t.doctorName}
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline" style="border-color: var(--success); color: var(--success); padding: 0.3rem 0.6rem; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.25rem;" onclick="restorePatientById('${t.id}')">
+                            <i class="fa-solid fa-trash-arrow-up"></i> Restore
+                        </button>
+                    </div>`;
+                });
+
+                recoveryList.innerHTML = html;
+            } catch (err) {
+                console.error("Failed to load recovery queue", err);
+            }
+        }
+
+        async function restorePatientById(patientId) {
+            try {
+                await QueueCureAPI.request(`/queue/restore/${patientId}`, 'POST', null, true);
+                await loadQueueMonitor();
+                await loadDoctorsList();
+            } catch (err) {
+                alert(err.message || "Failed to restore patient.");
+            }
+        }
+
         // Refresh triggers
         document.getElementById('refreshBtn').addEventListener('click', async () => {
             await loadDoctorsList();
@@ -560,9 +652,6 @@
             // Load initial global settings
             try {
                 const settingsData = await QueueCureAPI.request('/queue/tv', 'GET', null, false);
-                // TV data doesn't return settings directly, let's load general settings or calculate.
-                // We will just read the first doctor's settings or default. We can get it.
-                // Actually, let's render standard.
                 document.getElementById('globalTimeText').innerText = "10 Mins";
             } catch {}
 

@@ -13,6 +13,7 @@ namespace QueueCure.Services
         Task<Patient?> CompleteConsultationAsync(Guid patientId);
         Task<Patient?> SkipPatientAsync(Guid patientId);
         Task<Patient?> MarkEmergencyAsync(Guid patientId);
+        Task<Patient?> RestorePatientAsync(Guid patientId);
         
         Task<IEnumerable<Patient>> GetActiveQueueForDoctorAsync(Guid doctorId);
         Task<double> CalculateEstimatedWaitTimeAsync(Patient patient);
