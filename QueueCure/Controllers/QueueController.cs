@@ -30,6 +30,8 @@ namespace QueueCure.Controllers
                 var patient = await _queueService.GenerateTokenAsync(model.PatientName, model.PatientPhone, model.DoctorId);
                 var doctor = await _queueRepository.GetDoctorByIdAsync(patient.DoctorId);
                 var waitingCount = await _queueRepository.GetWaitingCountBeforePatientAsync(patient.DoctorId, patient.CheckInTime);
+                var waitMinutes = waitingCount * (doctor?.AverageConsultationTime ?? 10);
+                var estStart = DateTime.UtcNow.AddMinutes(waitMinutes);
 
                 return Ok(new
                 {
@@ -39,7 +41,10 @@ namespace QueueCure.Controllers
                     patient.PhoneNumber,
                     patient.CheckInTime,
                     patient.Status,
-                    estimatedWaitMinutes = waitingCount * (doctor?.AverageConsultationTime ?? 10)
+                    estimatedWaitMinutes = waitMinutes,
+                    estimatedStartTime = estStart,
+                    arrivalWindowStart = estStart.AddMinutes(-5),
+                    arrivalWindowEnd = estStart.AddMinutes(5)
                 });
             }
             catch (ArgumentException ex)
@@ -150,6 +155,9 @@ namespace QueueCure.Controllers
                 .FirstOrDefault(p => p.DoctorId == patient.DoctorId && p.Status == PatientStatus.InConsultation)
                 ?.TokenNumber;
 
+            var waitMinutes = waitingCount * avgTime;
+            var estStart = DateTime.UtcNow.AddMinutes(waitMinutes);
+
             return Ok(new
             {
                 id = patient.Id,
@@ -159,10 +167,13 @@ namespace QueueCure.Controllers
                 statusText = patient.Status.ToString(),
                 doctorName = doctor?.Name ?? "Doctor",
                 roomNumber = doctor?.RoomNumber ?? "N/A",
-                estimatedWaitMinutes = waitingCount * avgTime,
+                estimatedWaitMinutes = waitMinutes,
                 sequenceNumber = waitingCount + 1,
                 tokensAhead = waitingCount,
-                currentTokenBeingServed = currentServing ?? "None (Idle)"
+                currentTokenBeingServed = currentServing ?? "None (Idle)",
+                estimatedStartTime = estStart,
+                arrivalWindowStart = estStart.AddMinutes(-5),
+                arrivalWindowEnd = estStart.AddMinutes(5)
             });
         }
 

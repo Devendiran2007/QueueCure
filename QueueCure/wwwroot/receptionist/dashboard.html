@@ -147,7 +147,8 @@
                 <div><strong>Patient:</strong> <span id="ticketPatient">Name</span></div>
                 <div><strong>Assigned:</strong> <span id="ticketDoctor">Doctor</span></div>
                 <div><strong>Room:</strong> <span id="ticketRoom">N/A</span></div>
-                <div style="margin-top: 0.5rem; border-top: 1px solid var(--border); padding-top: 0.5rem; font-weight: 600; color: var(--accent);">
+                <div><strong>Arrival Window:</strong> <span id="ticketArrivalWindow" style="color: var(--accent); font-weight: 700;">--:-- - --:--</span></div>
+                <div style="margin-top: 0.5rem; border-top: 1px solid var(--border); padding-top: 0.5rem; font-weight: 600; color: var(--text-muted);">
                     Est. Wait Time: ~<span id="ticketWait">0</span> mins
                 </div>
             </div>
@@ -460,6 +461,12 @@
                 document.getElementById('ticketRoom').innerText = token.tokenNumber.split('-')[0];
                 document.getElementById('ticketWait').innerText = token.estimatedWaitMinutes;
                 document.getElementById('ticketTime').innerText = new Date(token.checkInTime).toLocaleTimeString();
+                
+                // Format and bind arrival window
+                const wStart = new Date(token.arrivalWindowStart);
+                const wEnd = new Date(token.arrivalWindowEnd);
+                const timeOpts = { hour: '2-digit', minute: '2-digit' };
+                document.getElementById('ticketArrivalWindow').innerText = `${wStart.toLocaleTimeString([], timeOpts)} - ${wEnd.toLocaleTimeString([], timeOpts)}`;
                 
                 document.getElementById('ticketModal').style.display = 'flex';
 

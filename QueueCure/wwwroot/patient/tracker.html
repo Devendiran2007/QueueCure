@@ -120,6 +120,22 @@
                 </div>
             </div>
 
+            <!-- Virtual Queue Passport Box -->
+            <div id="passportBox" class="card" style="margin-bottom: 1.5rem; border-color: var(--primary); background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff; padding: 1.25rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px dashed rgba(255,255,255,0.15); padding-bottom: 0.75rem; margin-bottom: 0.75rem;">
+                    <i class="fa-solid fa-passport" style="color: var(--accent); font-size: 1.5rem;"></i>
+                    <div>
+                        <h3 style="font-weight: 800; font-size: 1.05rem; margin: 0; color: #ffffff;">Virtual Queue Passport</h3>
+                        <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Arrival Window Indicator</span>
+                    </div>
+                </div>
+                <div style="text-align: center; padding: 0.5rem 0;">
+                    <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Recommended Arrival Window</div>
+                    <div style="font-size: 2.1rem; font-weight: 900; color: var(--accent); margin: 0.25rem 0;" id="displayArrivalWindow">--:-- - --:--</div>
+                    <span class="token-status status-active" id="displayPassportStatus" style="font-size: 0.8rem; padding: 0.25rem 0.75rem; display: inline-block; margin-top: 0.25rem;">Checking Status</span>
+                </div>
+            </div>
+
             <!-- Animated Queue Progress Bar -->
             <div class="card" style="padding: 1.25rem; margin-bottom: 1.5rem; border-color: var(--border);" id="progressBarCard">
                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; font-weight: 600;">
@@ -200,6 +216,55 @@
 
                 document.getElementById('displayTokensAhead').innerText = data.tokensAhead;
                 document.getElementById('displayWaitEstimate').innerText = `~${data.estimatedWaitMinutes} Mins`;
+
+                // Calculate and format recommended arrival window in local timezone
+                const windowStart = new Date(data.arrivalWindowStart);
+                const windowEnd = new Date(data.arrivalWindowEnd);
+                
+                const timeOpts = { hour: '2-digit', minute: '2-digit' };
+                const formattedStart = windowStart.toLocaleTimeString([], timeOpts);
+                const formattedEnd = windowEnd.toLocaleTimeString([], timeOpts);
+                
+                document.getElementById('displayArrivalWindow').innerText = `${formattedStart} - ${formattedEnd}`;
+
+                // Calculate passport indicator status
+                const now = new Date();
+                const passportStatus = document.getElementById('displayPassportStatus');
+                const passportBox = document.getElementById('passportBox');
+
+                if (data.status === 1 || data.statusText === 'InConsultation') {
+                    passportStatus.innerText = 'Call Active';
+                    passportStatus.className = 'token-status status-calling';
+                    passportBox.style.borderColor = 'var(--calling)';
+                } else if (data.status === 2 || data.statusText === 'Completed') {
+                    passportStatus.innerText = 'Completed';
+                    passportStatus.className = 'token-status status-active';
+                    passportBox.style.borderColor = 'var(--success)';
+                } else if (data.status === 3 || data.statusText === 'Skipped') {
+                    passportStatus.innerText = 'Skipped';
+                    passportStatus.className = 'token-status';
+                    passportStatus.style.backgroundColor = '#ef4444';
+                    passportStatus.style.color = '#ffffff';
+                    passportBox.style.borderColor = 'var(--danger)';
+                } else {
+                    // Waiting status: determine if user is on-time compared to their window
+                    if (now < windowStart) {
+                        passportStatus.innerText = 'Prepare to Travel';
+                        passportStatus.className = 'token-status status-waiting';
+                        passportBox.style.borderColor = 'var(--border)';
+                    } else if (now >= windowStart && now <= windowEnd) {
+                        passportStatus.innerText = 'Arrive Now';
+                        passportStatus.className = 'token-status status-active';
+                        passportStatus.style.animation = 'pulse 1s infinite';
+                        passportBox.style.borderColor = 'var(--success)';
+                    } else {
+                        passportStatus.innerText = 'Arriving Late';
+                        passportStatus.className = 'token-status';
+                        passportStatus.style.backgroundColor = 'var(--warning)';
+                        passportStatus.style.color = '#000000';
+                        passportBox.style.borderColor = 'var(--warning)';
+                    }
+                }
 
                 // Process Status Rendering
                 const statusBadge = document.getElementById('displayStatusText');
