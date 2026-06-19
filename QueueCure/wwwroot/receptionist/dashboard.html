@@ -120,6 +120,12 @@
                                 <option value="" disabled selected>Select a Doctor...</option>
                             </select>
                         </div>
+                        <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 2rem; background-color: #fee2e2; padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid #fca5a5;">
+                            <input type="checkbox" id="patientEmergency" style="width: 1.2rem; height: 1.2rem; cursor: pointer;">
+                            <label for="patientEmergency" style="font-weight: 700; color: #b91c1c; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; margin: 0; user-select: none;">
+                                <i class="fa-solid fa-circle-exclamation fa-fade"></i> Emergency Priority Check-In
+                            </label>
+                        </div>
                         <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; border-radius: var(--radius-sm);">
                             <i class="fa-solid fa-plus"></i> Print & Register Token
                         </button>
@@ -385,20 +391,29 @@
                 // Show waiting lists
                 waiting.forEach(t => {
                     const categoryDisplay = t.category ? t.category.replace(/([A-Z])/g, ' $1').trim() : 'General Checkup';
+                    const itemStyle = t.isEmergency ? 'border-left: 4px solid var(--danger); background-color: #fff5f5;' : '';
+                    const emergencyBadge = t.isEmergency ? `<span style="font-size: 0.75rem; background-color: var(--danger); color: white; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 700; margin-left: 0.5rem; display: inline-flex; align-items: center; gap: 0.25rem;"><i class="fa-solid fa-circle-exclamation fa-fade"></i> EMERGENCY</span>` : '';
+                    const emergencyButton = !t.isEmergency ? `
+                            <button class="btn btn-outline" style="border-color: var(--danger); color: var(--danger); padding: 0.3rem 0.6rem; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 0.25rem;" onclick="markEmergencyById('${t.id}')">
+                                <i class="fa-solid fa-truck-medical"></i> Elevate
+                            </button>` : '';
+
                     html += `
-                    <div class="token-item">
+                    <div class="token-item" style="${itemStyle}">
                         <div style="display: flex; align-items: center; gap: 1rem;">
-                            <span class="token-badge">${t.tokenNumber}</span>
+                            <span class="token-badge" style="${t.isEmergency ? 'background-color: var(--danger); color: white;' : ''}">${t.tokenNumber}</span>
                             <div>
                                 <strong style="font-size: 1.05rem;">${t.patientName || 'Patient'}</strong>
                                 <span style="font-size: 0.75rem; background-color: var(--primary-light); color: var(--primary); padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600; margin-left: 0.5rem;">${categoryDisplay}</span>
+                                ${emergencyBadge}
                                 <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">
                                     Waiting for ${t.doctorName} • Est. ${t.estimatedWaitMinutes} mins
                                 </div>
                             </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <span class="token-status status-waiting">Waiting</span>
+                            <span class="token-status ${t.isEmergency ? 'status-calling' : 'status-waiting'}" style="${t.isEmergency ? 'background-color: var(--danger); color: white;' : ''}">${t.isEmergency ? 'Priority' : 'Waiting'}</span>
+                            ${emergencyButton}
                             <button class="btn btn-outline" style="border-color: var(--danger); color: var(--danger); padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="promptSkipPatientByToken('${t.tokenNumber}')">
                                 <i class="fa-solid fa-forward"></i> Skip
                             </button>
@@ -457,13 +472,15 @@
             const phone = document.getElementById('patientPhone').value.trim();
             const category = document.getElementById('patientCategory').value;
             const docId = document.getElementById('doctorSelect').value;
+            const isEmergency = document.getElementById('patientEmergency').checked;
 
             try {
                 const token = await QueueCureAPI.request('/queue/generate', 'POST', {
                     patientName: name,
                     patientPhone: phone,
                     doctorId: docId,
-                    category: category
+                    category: category,
+                    isEmergency: isEmergency
                 }, true);
 
                 // Show ticket
@@ -519,6 +536,18 @@
                 alert(err.message || "Failed to skip patient.");
             }
         });
+
+        async function markEmergencyById(patientId) {
+            if (confirm("Are you sure you want to elevate this patient to Emergency Priority? They will immediately move to the front of the queue.")) {
+                try {
+                    await QueueCureAPI.request(`/queue/mark-emergency/${patientId}`, 'POST', null, true);
+                    await loadQueueMonitor();
+                    await loadDoctorsList();
+                } catch (err) {
+                    alert(err.message || "Failed to mark patient as emergency.");
+                }
+            }
+        }
 
         // Refresh triggers
         document.getElementById('refreshBtn').addEventListener('click', async () => {

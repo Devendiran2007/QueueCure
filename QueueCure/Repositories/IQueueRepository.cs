@@ -14,7 +14,7 @@ namespace QueueCure.Repositories
         Task<IEnumerable<Patient>> GetPatientsByStatusAsync(PatientStatus status);
         Task<IEnumerable<Patient>> GetAllPatientsTodayAsync();
         Task<int> GetNextSequenceNumberAsync(Guid doctorId);
-        Task<int> GetWaitingCountBeforePatientAsync(Guid doctorId, DateTime checkInTime);
+        Task<int> GetWaitingCountBeforePatientAsync(Patient patient);
         Task AddPatientAsync(Patient patient);
         Task UpdatePatientAsync(Patient patient);
         Task<double> GetAverageConsultationDurationAsync(VisitCategory category);

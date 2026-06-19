@@ -11,6 +11,7 @@ namespace QueueCure.Models
         public DateTime CheckInTime { get; set; } = DateTime.UtcNow;
         public PatientStatus Status { get; set; } = PatientStatus.Waiting;
         public VisitCategory Category { get; set; } = VisitCategory.GeneralCheckup;
+        public bool IsEmergency { get; set; } = false;
 
         // Foreign key to Doctor
         public Guid DoctorId { get; set; }

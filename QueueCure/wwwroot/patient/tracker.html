@@ -76,6 +76,11 @@
                 </div>
             </div>
 
+            <!-- Emergency Alert Banner -->
+            <div id="emergencyPriorityAlert" style="display: none; background-color: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; text-align: center; font-weight: 700; font-size: 0.95rem; animation: pulse 1.5s infinite;">
+                <i class="fa-solid fa-circle-exclamation fa-shake"></i> Priority Queue Placement Active (Emergency Status)
+            </div>
+
             <!-- Wait Status Grid info cards -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                 <!-- Now Serving -->
@@ -222,6 +227,13 @@
 
                 document.getElementById('displayTokensAhead').innerText = data.tokensAhead;
                 document.getElementById('displayWaitEstimate').innerText = `~${data.estimatedWaitMinutes} Mins`;
+
+                // Toggle emergency alert banner
+                if (data.isEmergency) {
+                    document.getElementById('emergencyPriorityAlert').style.display = 'block';
+                } else {
+                    document.getElementById('emergencyPriorityAlert').style.display = 'none';
+                }
 
                 // Calculate and format recommended arrival window in local timezone
                 const windowStart = new Date(data.arrivalWindowStart);

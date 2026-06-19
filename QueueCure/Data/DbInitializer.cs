@@ -10,7 +10,8 @@ namespace QueueCure.Data
     {
         public static void Initialize(QueueCureDbContext context)
         {
-            // Ensure database is created
+            // Ensure database is recreated for development schema changes
+            context.Database.EnsureDeleted();
             context.Database.EnsureCreated();
 
             // Seed global settings if empty

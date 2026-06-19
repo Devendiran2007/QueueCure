@@ -20,7 +20,7 @@ namespace QueueCure.Services
             _hubContext = hubContext;
         }
 
-        public async Task<Patient> GenerateTokenAsync(string patientName, string patientPhone, Guid doctorId, VisitCategory category)
+        public async Task<Patient> GenerateTokenAsync(string patientName, string patientPhone, Guid doctorId, VisitCategory category, bool isEmergency = false)
         {
             var doctor = await _queueRepository.GetDoctorByIdAsync(doctorId);
             if (doctor == null)
@@ -42,7 +42,8 @@ namespace QueueCure.Services
                 CheckInTime = DateTime.UtcNow,
                 Status = PatientStatus.Waiting,
                 DoctorId = doctorId,
-                Category = category
+                Category = category,
+                IsEmergency = isEmergency
             };
 
             await _queueRepository.AddPatientAsync(patient);
@@ -55,6 +56,17 @@ namespace QueueCure.Services
                 Timestamp = DateTime.UtcNow
             };
             await _queueRepository.AddQueueEventAsync(checkInEvent);
+
+            if (isEmergency)
+            {
+                var emergencyEvent = new QueueEvent
+                {
+                    PatientId = patient.Id,
+                    EventType = "EmergencyMarked",
+                    Timestamp = DateTime.UtcNow
+                };
+                await _queueRepository.AddQueueEventAsync(emergencyEvent);
+            }
 
             // Update global settings
             var settings = await _queueRepository.GetSettingsAsync();
@@ -230,13 +242,15 @@ namespace QueueCure.Services
             foreach (var p in waitingPatients)
             {
                 var doctor = doctors.FirstOrDefault(d => d.Id == p.DoctorId);
-                var estimatedWaitMinutes = await CalculateEstimatedWaitTimeAsync(p.DoctorId, p.CheckInTime);
+                var estimatedWaitMinutes = await CalculateEstimatedWaitTimeAsync(p);
                 
                 waitingList.Add(new
                 {
+                    id = p.Id,
                     tokenNumber = p.TokenNumber,
                     patientName = p.Name,
                     category = p.Category.ToString(),
+                    isEmergency = p.IsEmergency,
                     doctorName = doctor?.Name ?? "Doctor",
                     estimatedWaitMinutes = estimatedWaitMinutes
                 });
@@ -261,13 +275,16 @@ namespace QueueCure.Services
             };
         }
 
-        public async Task<double> CalculateEstimatedWaitTimeAsync(Guid doctorId, DateTime checkInTime)
+        public async Task<double> CalculateEstimatedWaitTimeAsync(Patient patient)
         {
-            var activePatients = await _queueRepository.GetActivePatientsForDoctorAsync(doctorId);
+            var activePatients = await _queueRepository.GetActivePatientsForDoctorAsync(patient.DoctorId);
+            var list = activePatients.ToList();
+            var index = list.FindIndex(p => p.Id == patient.Id);
+            if (index < 0) return 0;
 
             // 1. Remaining time of current consultation
             double remainingTime = 0;
-            var ongoingPatient = activePatients.FirstOrDefault(p => p.Status == PatientStatus.InConsultation);
+            var ongoingPatient = list.FirstOrDefault(p => p.Status == PatientStatus.InConsultation);
             if (ongoingPatient != null)
             {
                 double ongoingEstDuration = await _queueRepository.GetAverageConsultationDurationAsync(ongoingPatient.Category);
@@ -289,11 +306,9 @@ namespace QueueCure.Services
                 }
             }
 
-            // 2. Sum of estimated durations for all waiting patients checked in before this patient
+            // 2. Sum of estimated durations for all waiting patients checked in before this patient in priority order
             double waitingAheadDuration = 0;
-            var waitingPatientsAhead = activePatients
-                .Where(p => p.Status == PatientStatus.Waiting && p.CheckInTime < checkInTime)
-                .ToList();
+            var waitingPatientsAhead = list.Take(index).Where(p => p.Status == PatientStatus.Waiting).ToList();
 
             foreach (var p in waitingPatientsAhead)
             {
@@ -301,6 +316,33 @@ namespace QueueCure.Services
             }
 
             return Math.Round(remainingTime + waitingAheadDuration, 1);
+        }
+
+        public async Task<Patient?> MarkEmergencyAsync(Guid patientId)
+        {
+            var patient = await _queueRepository.GetPatientByIdAsync(patientId);
+            if (patient == null) return null;
+
+            if (!patient.IsEmergency)
+            {
+                patient.IsEmergency = true;
+                await _queueRepository.UpdatePatientAsync(patient);
+
+                // Log EmergencyMarked Event
+                var emergencyEvent = new QueueEvent
+                {
+                    PatientId = patient.Id,
+                    EventType = "EmergencyMarked",
+                    Timestamp = DateTime.UtcNow
+                };
+                await _queueRepository.AddQueueEventAsync(emergencyEvent);
+
+                // Broadcast live updates
+                await _hubContext.Clients.All.SendAsync("QueueUpdated");
+                await _hubContext.Clients.Group(patient.DoctorId.ToString()).SendAsync("DoctorQueueUpdated", patient.DoctorId);
+            }
+
+            return patient;
         }
 
         public async Task UpdateGlobalSettingsAsync(int averageTime)

@@ -42,7 +42,9 @@ namespace QueueCure.Repositories
                 .Where(p => p.DoctorId == doctorId && 
                             (p.Status == PatientStatus.Waiting || 
                              p.Status == PatientStatus.InConsultation))
-                .OrderBy(p => p.CheckInTime)
+                .OrderBy(p => p.Status == PatientStatus.InConsultation ? 0 : 1)
+                .ThenBy(p => p.IsEmergency ? 0 : 1)
+                .ThenBy(p => p.CheckInTime)
                 .ToListAsync();
         }
 
@@ -75,14 +77,14 @@ namespace QueueCure.Repositories
             return count + 1;
         }
 
-        public async Task<int> GetWaitingCountBeforePatientAsync(Guid doctorId, DateTime checkInTime)
+        public async Task<int> GetWaitingCountBeforePatientAsync(Patient patient)
         {
-            var today = DateTime.UtcNow.Date;
-            return await _context.Patients
-                .CountAsync(p => p.DoctorId == doctorId && 
-                                 p.Status == PatientStatus.Waiting && 
-                                 p.CheckInTime >= today &&
-                                 p.CheckInTime < checkInTime);
+            var activePatients = await GetActivePatientsForDoctorAsync(patient.DoctorId);
+            var list = activePatients.ToList();
+            var index = list.FindIndex(p => p.Id == patient.Id);
+            if (index <= 0) return 0;
+
+            return list.Take(index).Count(p => p.Status == PatientStatus.Waiting);
         }
 
         public async Task AddPatientAsync(Patient patient)

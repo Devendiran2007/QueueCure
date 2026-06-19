@@ -27,9 +27,9 @@ namespace QueueCure.Controllers
         {
             try
             {
-                var patient = await _queueService.GenerateTokenAsync(model.PatientName, model.PatientPhone, model.DoctorId, model.Category);
-                var waitingCount = await _queueRepository.GetWaitingCountBeforePatientAsync(patient.DoctorId, patient.CheckInTime);
-                var waitMinutes = await _queueService.CalculateEstimatedWaitTimeAsync(patient.DoctorId, patient.CheckInTime);
+                var patient = await _queueService.GenerateTokenAsync(model.PatientName, model.PatientPhone, model.DoctorId, model.Category, model.IsEmergency);
+                var waitingCount = await _queueRepository.GetWaitingCountBeforePatientAsync(patient);
+                var waitMinutes = await _queueService.CalculateEstimatedWaitTimeAsync(patient);
                 var estStart = DateTime.UtcNow.AddMinutes(waitMinutes);
 
                 return Ok(new
@@ -41,6 +41,7 @@ namespace QueueCure.Controllers
                     patient.CheckInTime,
                     patient.Status,
                     category = patient.Category.ToString(),
+                    isEmergency = patient.IsEmergency,
                     estimatedWaitMinutes = waitMinutes,
                     estimatedStartTime = estStart,
                     arrivalWindowStart = estStart.AddMinutes(-5),
@@ -146,7 +147,7 @@ namespace QueueCure.Controllers
             }
 
             var doctor = await _queueRepository.GetDoctorByIdAsync(patient.DoctorId);
-            var waitingCount = await _queueRepository.GetWaitingCountBeforePatientAsync(patient.DoctorId, patient.CheckInTime);
+            var waitingCount = await _queueRepository.GetWaitingCountBeforePatientAsync(patient);
 
             // Fetch the token currently being served by this doctor
             var patientsToday = await _queueRepository.GetAllPatientsTodayAsync();
@@ -154,7 +155,7 @@ namespace QueueCure.Controllers
                 .FirstOrDefault(p => p.DoctorId == patient.DoctorId && p.Status == PatientStatus.InConsultation)
                 ?.TokenNumber;
 
-            var waitMinutes = await _queueService.CalculateEstimatedWaitTimeAsync(patient.DoctorId, patient.CheckInTime);
+            var waitMinutes = await _queueService.CalculateEstimatedWaitTimeAsync(patient);
             var estStart = DateTime.UtcNow.AddMinutes(waitMinutes);
 
             return Ok(new
@@ -165,6 +166,7 @@ namespace QueueCure.Controllers
                 status = (int)patient.Status,
                 statusText = patient.Status.ToString(),
                 category = patient.Category.ToString(),
+                isEmergency = patient.IsEmergency,
                 doctorName = doctor?.Name ?? "Doctor",
                 roomNumber = doctor?.RoomNumber ?? "N/A",
                 estimatedWaitMinutes = waitMinutes,
@@ -260,6 +262,18 @@ namespace QueueCure.Controllers
             }
             return Ok(averages);
         }
+
+        [HttpPost("mark-emergency/{patientId}")]
+        [Authorize(Roles = "Receptionist,Doctor")]
+        public async Task<IActionResult> MarkEmergency(Guid patientId)
+        {
+            var patient = await _queueService.MarkEmergencyAsync(patientId);
+            if (patient == null)
+            {
+                return NotFound(new { message = "Patient not found." });
+            }
+            return Ok(patient);
+        }
     }
 
     public class GenerateTokenDto
@@ -268,5 +282,6 @@ namespace QueueCure.Controllers
         public string PatientPhone { get; set; } = string.Empty;
         public Guid DoctorId { get; set; }
         public VisitCategory Category { get; set; } = VisitCategory.GeneralCheckup;
+        public bool IsEmergency { get; set; } = false;
     }
 }
