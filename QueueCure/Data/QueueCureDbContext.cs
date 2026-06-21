@@ -15,6 +15,10 @@ namespace QueueCure.Data
         public DbSet<QueueSettings> QueueSettings { get; set; } = null!;
         public DbSet<QueueEvent> QueueEvents { get; set; } = null!;
         public DbSet<Notification> Notifications { get; set; } = null!;
+        public DbSet<HistoricalConsultation> HistoricalConsultations { get; set; } = null!;
+        public DbSet<WhatsAppMessage> WhatsAppMessages { get; set; } = null!;
+        public DbSet<DelayEvent> DelayEvents { get; set; } = null!;
+        public DbSet<QueueImpact> QueueImpacts { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -67,6 +71,57 @@ namespace QueueCure.Data
 
             modelBuilder.Entity<Notification>()
                 .HasIndex(n => n.PatientId);
+
+            // HistoricalConsultation config
+            modelBuilder.Entity<HistoricalConsultation>()
+                .HasOne(h => h.Doctor)
+                .WithMany()
+                .HasForeignKey(h => h.DoctorId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<HistoricalConsultation>()
+                .HasIndex(h => h.DoctorId);
+
+            modelBuilder.Entity<HistoricalConsultation>()
+                .HasIndex(h => h.PatientCategory);
+
+            modelBuilder.Entity<HistoricalConsultation>()
+                .HasIndex(h => new { h.DayOfWeek, h.HourOfDay });
+
+            // DelayEvent config
+            modelBuilder.Entity<DelayEvent>()
+                .HasOne(d => d.Doctor)
+                .WithMany()
+                .HasForeignKey(d => d.DoctorId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<DelayEvent>()
+                .HasOne(d => d.Patient)
+                .WithMany()
+                .HasForeignKey(d => d.PatientId)
+                .OnDelete(DeleteBehavior.NoAction); // Avoid circular cascade paths
+
+            modelBuilder.Entity<DelayEvent>()
+                .HasIndex(d => d.DoctorId);
+
+            modelBuilder.Entity<DelayEvent>()
+                .HasIndex(d => d.PatientId);
+
+            modelBuilder.Entity<DelayEvent>()
+                .HasIndex(d => d.Timestamp);
+
+            // QueueImpact config
+            modelBuilder.Entity<QueueImpact>()
+                .HasOne(q => q.Patient)
+                .WithMany()
+                .HasForeignKey(q => q.PatientId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<QueueImpact>()
+                .HasIndex(q => q.PatientId);
+
+            modelBuilder.Entity<QueueImpact>()
+                .HasIndex(q => q.Timestamp);
         }
     }
 }

@@ -65,6 +65,9 @@
                     <span class="user-badge" id="doctorNameHeader">Doctor Profile</span>
                     <span id="availabilityStatus" class="token-status status-active">Online</span>
                 </div>
+                <a href="analytics.html" class="btn btn-outline" style="text-decoration: none;">
+                    <i class="fa-solid fa-chart-line"></i> View Analytics
+                </a>
                 <button class="btn btn-outline" id="logoutBtn">
                     <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
                 </button>
@@ -94,6 +97,18 @@
                         <div class="card-header" style="margin-bottom: 1rem;">
                             <h2 class="card-title"><i class="fa-solid fa-user-check" style="color: var(--primary);"></i> Current Consultation</h2>
                             <span id="currentStatusBadge" class="token-status status-waiting">Idle</span>
+                        </div>
+
+                        <!-- Reliability & Delay Info -->
+                        <div style="display: flex; justify-content: space-between; padding: 0.5rem 1rem; background-color: var(--bg-base); border-radius: var(--radius-sm); margin-bottom: 1rem; font-size: 0.85rem; align-items: center;">
+                            <div>
+                                <i class="fa-solid fa-square-poll-vertical" style="color: var(--primary);"></i>
+                                <span style="font-weight: 700; margin-left: 0.25rem;" id="doctorReliabilityText">Queue Reliability: --/100</span>
+                                <span class="token-status status-active" id="doctorReliabilityLabel" style="font-size: 0.7rem; padding: 0.1rem 0.3rem; margin-left: 0.25rem; font-weight: 700;">Excellent</span>
+                            </div>
+                            <div id="doctorDelayBanner" style="display: none; color: #b45309; font-weight: 700; animation: pulse 1.5s infinite;">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Running Behind: +<span id="doctorDelayMins">0</span>m
+                            </div>
                         </div>
                         
                         <!-- Empty Active State -->
@@ -242,6 +257,7 @@
                 return profile.id;
             } catch (err) {
                 alert("Failed to load doctor profile detail.");
+                QueueCureAPI.clearSession();
                 window.location.href = '/index.html';
             }
         }
@@ -381,14 +397,50 @@
         async function loadDoctorQueue() {
             if (!doctorId) return;
             try {
+                // Fetch reliability
+                try {
+                    const reliability = await QueueCureAPI.request(`/queue/reliability/${doctorId}`, 'GET', null, true);
+                    document.getElementById('doctorReliabilityText').innerText = `Queue Reliability: ${reliability.score}/100`;
+                    const relLabel = document.getElementById('doctorReliabilityLabel');
+                    relLabel.innerText = reliability.label;
+                    relLabel.className = 'token-status';
+                    if (reliability.score >= 90) relLabel.classList.add('status-active');
+                    else if (reliability.score >= 75) relLabel.classList.add('status-active');
+                    else if (reliability.score >= 50) relLabel.classList.add('status-calling');
+                    else relLabel.classList.add('status-waiting');
+                } catch (relErr) {
+                    console.error("Failed to load doctor queue reliability", relErr);
+                }
+
                 const queue = await QueueCureAPI.request(`/queue/doctor/${doctorId}`, 'GET', null, true);
                 const queueList = document.getElementById('doctorQueueList');
                 
                 // Separate ongoing (InConsultation) from waiting list
-                const activeTokenInList = queue.find(t => t.status === 'InConsultation' || t.status === 1);
+                const activeTokenInList = queue.find(t => t.status === 'InConsultation' || t.status === 1 || t.statusText === 'InConsultation');
                 await renderCurrentSession(activeTokenInList);
 
-                const waiting = queue.filter(t => t.status === 'Waiting' || t.status === 0);
+                // Fetch delays check
+                const delayBanner = document.getElementById('doctorDelayBanner');
+                if (activeTokenInList) {
+                    try {
+                        const explanation = await QueueCureAPI.request(`/queue/explain/${activeTokenInList.id}`, 'GET', null, true);
+                        const delayReason = explanation.explanations.find(r => r.includes("running behind schedule"));
+                        if (delayReason) {
+                            const match = delayReason.match(/\+(\d+)/);
+                            const mins = match ? match[1] : '5';
+                            document.getElementById('doctorDelayMins').innerText = mins;
+                            delayBanner.style.display = 'block';
+                        } else {
+                            delayBanner.style.display = 'none';
+                        }
+                    } catch (err) {
+                        delayBanner.style.display = 'none';
+                    }
+                } else {
+                    delayBanner.style.display = 'none';
+                }
+
+                const waiting = queue.filter(t => t.status === 'Waiting' || t.status === 0 || t.statusText === 'Waiting');
                 document.getElementById('waitingCountText').innerText = waiting.length;
 
                 // Play soft sound buzzer if waiting count increased

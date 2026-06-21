@@ -13,11 +13,15 @@ namespace QueueCure.Services
     {
         private readonly IQueueRepository _queueRepository;
         private readonly IHubContext<QueueHub> _hubContext;
+        private readonly IMLPredictionService _mlPredictionService;
+        private readonly IWhatsAppService _whatsAppService;
 
-        public QueueService(IQueueRepository queueRepository, IHubContext<QueueHub> hubContext)
+        public QueueService(IQueueRepository queueRepository, IHubContext<QueueHub> hubContext, IMLPredictionService mlPredictionService, IWhatsAppService whatsAppService)
         {
             _queueRepository = queueRepository;
             _hubContext = hubContext;
+            _mlPredictionService = mlPredictionService;
+            _whatsAppService = whatsAppService;
         }
 
         public async Task<Patient> GenerateTokenAsync(string patientName, string patientPhone, Guid doctorId, VisitCategory category, bool isEmergency = false)
@@ -34,6 +38,9 @@ namespace QueueCure.Services
             string prefix = !string.IsNullOrWhiteSpace(doctor.RoomNumber) ? doctor.RoomNumber.Trim() : "Q";
             string tokenNumber = $"{prefix}-{nextSeq:D3}";
 
+            var activePatients = await _queueRepository.GetActivePatientsForDoctorAsync(doctorId);
+            var waitingCount = activePatients.Count(p => p.Status == PatientStatus.Waiting);
+
             var patient = new Patient
             {
                 Name = patientName,
@@ -43,7 +50,8 @@ namespace QueueCure.Services
                 Status = PatientStatus.Waiting,
                 DoctorId = doctorId,
                 Category = category,
-                IsEmergency = isEmergency
+                IsEmergency = isEmergency,
+                QueuePositionWhenAdded = waitingCount
             };
 
             await _queueRepository.AddPatientAsync(patient);
@@ -76,6 +84,11 @@ namespace QueueCure.Services
             // Notify clients real-time
             await _hubContext.Clients.All.SendAsync("QueueUpdated");
             await _hubContext.Clients.Group(doctorId.ToString()).SendAsync("DoctorQueueUpdated", doctorId);
+
+            // Send WhatsApp Alert
+            patient.Doctor = doctor;
+            var estWait = await CalculateEstimatedWaitTimeAsync(patient);
+            await _whatsAppService.SendQueueAlertAsync(patient, "registration", estWait);
 
             return patient;
         }
@@ -132,6 +145,10 @@ namespace QueueCure.Services
             await _hubContext.Clients.All.SendAsync("QueueUpdated");
             await _hubContext.Clients.Group(doctorId.ToString()).SendAsync("DoctorQueueUpdated", doctorId);
 
+            // Send WhatsApp Alert
+            nextWaiting.Doctor = doctor;
+            await _whatsAppService.SendQueueAlertAsync(nextWaiting, "called");
+
             return nextWaiting;
         }
 
@@ -139,6 +156,9 @@ namespace QueueCure.Services
         {
             var patient = await _queueRepository.GetPatientByIdAsync(patientId);
             if (patient == null || patient.Status != PatientStatus.InConsultation) return null;
+
+            patient.ConsultationStartTime = DateTime.UtcNow;
+            await _queueRepository.UpdatePatientAsync(patient);
 
             // Log started event (marks the transition from Called to examination room)
             var startEvent = new QueueEvent
@@ -162,6 +182,13 @@ namespace QueueCure.Services
             if (patient == null) return null;
 
             patient.Status = PatientStatus.Completed;
+            patient.ConsultationEndTime = DateTime.UtcNow;
+            if (patient.ConsultationStartTime == null)
+            {
+                var events = await _queueRepository.GetEventsByPatientIdAsync(patientId);
+                var calledTime = events.FirstOrDefault(e => e.EventType == "Called")?.Timestamp;
+                patient.ConsultationStartTime = calledTime ?? DateTime.UtcNow.AddMinutes(-10);
+            }
             await _queueRepository.UpdatePatientAsync(patient);
 
             // Log Completed Event
@@ -172,6 +199,9 @@ namespace QueueCure.Services
                 Timestamp = DateTime.UtcNow
             };
             await _queueRepository.AddQueueEventAsync(completeEvent);
+
+            // Record completed consultation in prediction history dataset
+            await _mlPredictionService.RecordCompletedConsultationAsync(patient.Id);
 
             // Notify
             await _hubContext.Clients.All.SendAsync("QueueUpdated");
@@ -210,6 +240,9 @@ namespace QueueCure.Services
             // Notify
             await _hubContext.Clients.All.SendAsync("QueueUpdated");
             await _hubContext.Clients.Group(patient.DoctorId.ToString()).SendAsync("DoctorQueueUpdated", patient.DoctorId);
+
+            // Send WhatsApp Alert
+            await _whatsAppService.SendQueueAlertAsync(patient, "skipped");
 
             return patient;
         }
@@ -371,6 +404,10 @@ namespace QueueCure.Services
                 // Broadcast live updates
                 await _hubContext.Clients.All.SendAsync("QueueUpdated");
                 await _hubContext.Clients.Group(patient.DoctorId.ToString()).SendAsync("DoctorQueueUpdated", patient.DoctorId);
+
+                // Send WhatsApp Alert
+                var estWait = await CalculateEstimatedWaitTimeAsync(patient);
+                await _whatsAppService.SendQueueAlertAsync(patient, "restored", estWait);
             }
 
             return patient;
@@ -398,6 +435,21 @@ namespace QueueCure.Services
                 await _hubContext.Clients.All.SendAsync("QueueUpdated");
                 await _hubContext.Clients.Group(doctorId.ToString()).SendAsync("DoctorQueueUpdated", doctorId);
             }
+        }
+
+        public async Task<Doctor?> ToggleDoctorAvailabilityAsync(Guid doctorId)
+        {
+            var doctor = await _queueRepository.GetDoctorByIdAsync(doctorId);
+            if (doctor == null) return null;
+
+            doctor.IsAvailable = !doctor.IsAvailable;
+            await _queueRepository.UpdateDoctorAsync(doctor);
+
+            // Broadcast live updates
+            await _hubContext.Clients.All.SendAsync("QueueUpdated");
+            await _hubContext.Clients.Group(doctorId.ToString()).SendAsync("DoctorQueueUpdated", doctorId);
+
+            return doctor;
         }
     }
 }

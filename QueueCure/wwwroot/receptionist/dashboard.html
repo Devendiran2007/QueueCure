@@ -33,21 +33,49 @@
                     <p style="color: var(--text-muted);">Manage checked-in patients, adjust consultation speeds, and trigger doctor bells.</p>
                 </div>
                 
-                <!-- Global Config Inline Panel -->
-                <div class="card" style="padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 1rem; border-color: var(--primary);">
-                    <i class="fa-solid fa-gears" style="color: var(--primary); font-size: 1.25rem;"></i>
-                    <div>
-                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; text-transform: uppercase;">Global Consult Time</span>
-                        <strong style="font-size: 1.05rem;" id="globalTimeText">10 Mins</strong>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <!-- Clinic Reliability Score Panel -->
+                    <div class="card" style="padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 1rem; border-color: var(--success);" id="clinicReliabilityCard">
+                        <i class="fa-solid fa-square-check" id="clinicReliabilityIcon" style="color: var(--success); font-size: 1.25rem;"></i>
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; text-transform: uppercase;">Clinic Reliability</span>
+                            <strong style="font-size: 1.05rem;" id="clinicReliabilityText">--/100 (--)</strong>
+                        </div>
                     </div>
-                    <button class="btn btn-outline" id="editGlobalSettingsBtn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
-                        <i class="fa-solid fa-pen-to-square"></i> Change
-                    </button>
+
+                    <!-- Global Config Inline Panel -->
+                    <div class="card" style="padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 1rem; border-color: var(--primary);">
+                        <i class="fa-solid fa-gears" style="color: var(--primary); font-size: 1.25rem;"></i>
+                        <div>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; display: block; text-transform: uppercase;">Global Consult Time</span>
+                            <strong style="font-size: 1.05rem;" id="globalTimeText">10 Mins</strong>
+                        </div>
+                        <button class="btn btn-outline" id="editGlobalSettingsBtn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
+                            <i class="fa-solid fa-pen-to-square"></i> Change
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Stats Bar -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+            <!-- Premium Tab Navigation -->
+            <div style="display: flex; gap: 0.75rem; border-bottom: 2px solid var(--border); margin-bottom: 2rem; padding-bottom: 0.5rem; flex-wrap: wrap;">
+                <button class="tab-btn active" id="tabLiveQueuesBtn" onclick="switchReceptionistTab('LiveQueues')" style="font-size: 0.9rem; padding: 0.5rem 1.25rem; border-radius: var(--radius-sm); border: none; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; background-color: var(--primary); color: white; transition: all 0.2s;">
+                    <i class="fa-solid fa-users"></i> Live Queues
+                </button>
+                <button class="tab-btn" id="tabAnalyticsBtn" onclick="switchReceptionistTab('Analytics')" style="font-size: 0.9rem; padding: 0.5rem 1.25rem; border-radius: var(--radius-sm); border: none; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; background-color: transparent; color: var(--text-muted); transition: all 0.2s;">
+                    <i class="fa-solid fa-chart-line"></i> Efficiency Analytics
+                </button>
+                <button class="tab-btn" id="tabWhatIfBtn" onclick="switchReceptionistTab('WhatIf')" style="font-size: 0.9rem; padding: 0.5rem 1.25rem; border-radius: var(--radius-sm); border: none; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; background-color: transparent; color: var(--text-muted); transition: all 0.2s;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> What-If Simulator
+                </button>
+                <button class="tab-btn" id="tabImpactBtn" onclick="switchReceptionistTab('Impact')" style="font-size: 0.9rem; padding: 0.5rem 1.25rem; border-radius: var(--radius-sm); border: none; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; background-color: transparent; color: var(--text-muted); transition: all 0.2s;">
+                    <i class="fa-solid fa-bolt"></i> Queue Impact Reports
+                </button>
+            </div>
+
+            <div id="sectionLiveQueues">
+                <!-- Stats Bar -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
                 <div class="card" style="display: flex; align-items: center; gap: 1.25rem; padding: 1.25rem;">
                     <div style="background-color: var(--primary-light); color: var(--primary); padding: 1rem; border-radius: var(--radius-sm); font-size: 1.5rem;">
                         <i class="fa-solid fa-users"></i>
@@ -114,6 +142,8 @@
                                     <option value="DiabetesReview">Diabetes Review</option>
                                     <option value="CardiologyConsultation">Cardiology Consultation</option>
                                     <option value="FollowUp">Follow Up</option>
+                                    <option value="OrthopedicConsultation">Orthopedic Consultation</option>
+                                    <option value="PediatricConsultation">Pediatric Consultation</option>
                                 </select>
                             </div>
                             <div class="form-group" style="margin-bottom: 2rem;">
@@ -145,6 +175,21 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Simulated WhatsApp Outbox Logs -->
+                    <div class="card" style="border-left: 5px solid #25D366;">
+                        <div class="card-header" style="justify-content: space-between; align-items: center; display: flex;">
+                            <h2 class="card-title" style="color: #128c7e;"><i class="fa-brands fa-whatsapp"></i> Simulated WhatsApp Outbox</h2>
+                            <button class="btn btn-outline" id="refreshWaLogsBtn" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="loadWhatsAppLogs()">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                            </button>
+                        </div>
+                        <div id="waOutboxLogs" style="max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding: 0.25rem;">
+                            <div style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+                                No simulated messages sent yet.
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Today's Patients Live List (Right Column) -->
@@ -157,6 +202,236 @@
                     </div>
                     <div class="token-list" id="receptionistQueueList">
                         <!-- Injected patients table/list -->
+                    </div>
+                </div>
+            </div>
+            </div> <!-- End sectionLiveQueues -->
+
+            <!-- Section 2: Clinic Efficiency Analytics Dashboard -->
+            <div id="sectionAnalytics" style="display: none;">
+                <div class="analytics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+                    <!-- Utilization -->
+                    <div class="metric-card" style="display: flex; align-items: center; gap: 1rem; background-color: var(--bg-surface); padding: 1.25rem; border: 1px solid var(--border); border-radius: var(--radius-sm);">
+                        <div style="background-color: var(--primary-light); color: var(--primary); padding: 0.75rem; border-radius: var(--radius-sm); font-size: 1.5rem;">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.6rem; font-weight: 800;" id="analUtilization">0%</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Doctor Utilization</div>
+                        </div>
+                    </div>
+                    <!-- Avg Consult -->
+                    <div class="metric-card" style="display: flex; align-items: center; gap: 1rem; background-color: var(--bg-surface); padding: 1.25rem; border: 1px solid var(--border); border-radius: var(--radius-sm);">
+                        <div style="background-color: #ecfdf5; color: var(--success); padding: 0.75rem; border-radius: var(--radius-sm); font-size: 1.5rem;">
+                            <i class="fa-solid fa-stethoscope"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.6rem; font-weight: 800;" id="analAvgConsult">0.0m</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Avg Consult Duration</div>
+                        </div>
+                    </div>
+                    <!-- Avg Wait -->
+                    <div class="metric-card" style="display: flex; align-items: center; gap: 1rem; background-color: var(--bg-surface); padding: 1.25rem; border: 1px solid var(--border); border-radius: var(--radius-sm);">
+                        <div style="background-color: #fffbeb; color: var(--warning); padding: 0.75rem; border-radius: var(--radius-sm); font-size: 1.5rem;">
+                            <i class="fa-solid fa-clock"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.6rem; font-weight: 800;" id="analAvgWait">0.0m</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Average Wait Time</div>
+                        </div>
+                    </div>
+                    <!-- Prediction Accuracy -->
+                    <div class="metric-card" style="display: flex; align-items: center; gap: 1rem; background-color: var(--bg-surface); padding: 1.25rem; border: 1px solid var(--border); border-radius: var(--radius-sm);">
+                        <div style="background-color: #e0f2fe; color: #0284c7; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 1.5rem;">
+                            <i class="fa-solid fa-bullseye"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.6rem; font-weight: 800;" id="analAccuracy">0%</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Prediction Accuracy</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+                    <!-- Doctor Idle Time -->
+                    <div class="card" style="padding: 1rem; text-align: center;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Doctor Idle Time</span>
+                        <div style="font-size: 1.5rem; font-weight: 800; margin-top: 0.25rem;" id="analIdleTime">0 mins</div>
+                    </div>
+                    <!-- No Show Rate -->
+                    <div class="card" style="padding: 1rem; text-align: center;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">No Show Rate</span>
+                        <div style="font-size: 1.5rem; font-weight: 800; margin-top: 0.25rem; color: var(--danger);" id="analNoShow">0.0%</div>
+                    </div>
+                    <!-- Emergency Rate -->
+                    <div class="card" style="padding: 1rem; text-align: center;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Emergency Rate</span>
+                        <div style="font-size: 1.5rem; font-weight: 800; margin-top: 0.25rem; color: var(--calling);" id="analEmergencyRate">0.0%</div>
+                    </div>
+                    <!-- Served Count -->
+                    <div class="card" style="padding: 1rem; text-align: center;">
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Served Today</span>
+                        <div style="font-size: 1.5rem; font-weight: 800; margin-top: 0.25rem; color: var(--success);" id="analServedCount">0 / 0</div>
+                    </div>
+                </div>
+
+                <!-- Doctor Efficiency Table -->
+                <div class="card" style="margin-bottom: 2rem;">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fa-solid fa-user-doctor" style="color: var(--primary);"></i> Doctor Efficiency Breakdown</h2>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;" id="analDoctorTable">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--border); text-align: left; color: var(--text-muted);">
+                                    <th style="padding: 0.75rem 1rem;">Doctor Name</th>
+                                    <th style="padding: 0.75rem 1rem;">Specialization</th>
+                                    <th style="padding: 0.75rem 1rem;">Utilization %</th>
+                                    <th style="padding: 0.75rem 1rem;">Served count</th>
+                                    <th style="padding: 0.75rem 1rem;">Skipped count</th>
+                                    <th style="padding: 0.75rem 1rem;">Avg Consult</th>
+                                </tr>
+                            </thead>
+                            <tbody style="color: var(--text-main);">
+                                <!-- Injected dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: What-If Simulator Panel -->
+            <div id="sectionWhatIf" style="display: none;">
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; margin-bottom: 2rem;">
+                    <!-- Left: Control Panel -->
+                    <div class="card" style="height: fit-content;">
+                        <div class="card-header">
+                            <h2 class="card-title"><i class="fa-solid fa-gears" style="color: var(--primary);"></i> Simulation Controls</h2>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div class="form-group">
+                                <label class="form-label" for="simScenarioSelect">Select What-If Scenario</label>
+                                <select id="simScenarioSelect" class="form-control" onchange="toggleSimDocSelect()">
+                                    <option value="A">Scenario A: Add one more doctor</option>
+                                    <option value="B">Scenario B: Two emergency patients arrive</option>
+                                    <option value="C">Scenario C: Doctor consultation speed improves by 20%</option>
+                                    <option value="D">Scenario D: Expected patient volume increases by 30%</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="simDocSelectGroup" style="display: none;">
+                                <label class="form-label" for="simDocSelect">Select Target Doctor</label>
+                                <select id="simDocSelect" class="form-control">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" onclick="runWhatIfSimulation()" style="padding: 1rem; border-radius: var(--radius-sm);">
+                                <i class="fa-solid fa-play"></i> Run Simulation
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Comparison Dashboard -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title"><i class="fa-solid fa-chart-line" style="color: var(--accent);"></i> Outcomes Comparison</h2>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                            <!-- Wait Time Comparison -->
+                            <div class="card" style="padding: 1rem; border-color: var(--border); margin: 0;">
+                                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Average Wait Time</span>
+                                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 0.5rem;">
+                                    <div>
+                                        <div style="font-size: 0.85rem; color: var(--text-muted);">Real</div>
+                                        <strong style="font-size: 1.25rem;" id="simRealWait">0.0m</strong>
+                                    </div>
+                                    <div style="font-size: 1.5rem; color: var(--text-muted);">&rarr;</div>
+                                    <div>
+                                        <div style="font-size: 0.85rem; color: var(--primary);">Simulated</div>
+                                        <strong style="font-size: 1.5rem; color: var(--primary);" id="simSimWait">0.0m</strong>
+                                    </div>
+                                </div>
+                                <div style="font-size: 0.8rem; margin-top: 0.5rem; font-weight: 700;" id="simWaitDelta">-</div>
+                            </div>
+                            <!-- Queue Length Comparison -->
+                            <div class="card" style="padding: 1rem; border-color: var(--border); margin: 0;">
+                                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Queue Length</span>
+                                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 0.5rem;">
+                                    <div>
+                                        <div style="font-size: 0.85rem; color: var(--text-muted);">Real</div>
+                                        <strong style="font-size: 1.25rem;" id="simRealLen">0</strong>
+                                    </div>
+                                    <div style="font-size: 1.5rem; color: var(--text-muted);">&rarr;</div>
+                                    <div>
+                                        <div style="font-size: 0.85rem; color: var(--primary);">Simulated</div>
+                                        <strong style="font-size: 1.5rem; color: var(--primary);" id="simSimLen">0</strong>
+                                    </div>
+                                </div>
+                                <div style="font-size: 0.8rem; margin-top: 0.5rem; font-weight: 700;" id="simLenDelta">-</div>
+                            </div>
+                            <!-- Delays Comparison -->
+                            <div class="card" style="padding: 1rem; border-color: var(--border); margin: 0;">
+                                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Predicted Delays</span>
+                                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 0.5rem;">
+                                    <div>
+                                        <div style="font-size: 0.85rem; color: var(--text-muted);">Real</div>
+                                        <strong style="font-size: 1.25rem;" id="simRealDel">0</strong>
+                                    </div>
+                                    <div style="font-size: 1.5rem; color: var(--text-muted);">&rarr;</div>
+                                    <div>
+                                        <div style="font-size: 0.85rem; color: var(--primary);">Simulated</div>
+                                        <strong style="font-size: 1.5rem; color: var(--primary);" id="simSimDel">0</strong>
+                                    </div>
+                                </div>
+                                <div style="font-size: 0.8rem; margin-top: 0.5rem; font-weight: 700;" id="simDelDelta">-</div>
+                            </div>
+                            <!-- Utilization Comparison -->
+                            <div class="card" style="padding: 1rem; border-color: var(--border); margin: 0;">
+                                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Doctor Utilization</span>
+                                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 0.5rem;">
+                                    <div>
+                                        <div style="font-size: 0.85rem; color: var(--text-muted);">Real</div>
+                                        <strong style="font-size: 1.25rem;" id="simRealUtil">0%</strong>
+                                    </div>
+                                    <div style="font-size: 1.5rem; color: var(--text-muted);">&rarr;</div>
+                                    <div>
+                                        <div style="font-size: 0.85rem; color: var(--primary);">Simulated</div>
+                                        <strong style="font-size: 1.5rem; color: var(--primary);" id="simSimUtil">0%</strong>
+                                    </div>
+                                </div>
+                                <div style="font-size: 0.8rem; margin-top: 0.5rem; font-weight: 700;" id="simUtilDelta">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: Queue Impact Reports Log -->
+            <div id="sectionImpact" style="display: none;">
+                <div class="card" style="margin-bottom: 2rem;">
+                    <div class="card-header" style="justify-content: space-between; align-items: center; display: flex;">
+                        <h2 class="card-title"><i class="fa-solid fa-bolt" style="color: var(--primary);"></i> Queue Impact Logs</h2>
+                        <button class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="loadQueueImpactLogs()">
+                            <i class="fa-solid fa-arrows-rotate"></i> Refresh Impacts
+                        </button>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;" id="impactLogsTable">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--border); text-align: left; color: var(--text-muted); font-weight: 700;">
+                                    <th style="padding: 0.75rem 1rem;">Time</th>
+                                    <th style="padding: 0.75rem 1rem;">Event Type</th>
+                                    <th style="padding: 0.75rem 1rem;">Details</th>
+                                    <th style="padding: 0.75rem 1rem;">Token</th>
+                                    <th style="padding: 0.75rem 1rem;">Patient</th>
+                                    <th style="padding: 0.75rem 1rem;">Before</th>
+                                    <th style="padding: 0.75rem 1rem;">After</th>
+                                    <th style="padding: 0.75rem 1rem;">Shift</th>
+                                </tr>
+                            </thead>
+                            <tbody style="color: var(--text-main);">
+                                <!-- Injected dynamically -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -184,8 +459,16 @@
                 </div>
             </div>
             
+            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; color: var(--success); font-weight: 700; font-size: 0.85rem; margin-bottom: 1rem; background-color: #ecfdf5; padding: 0.5rem; border-radius: var(--radius-sm); border: 1px solid #a7f3d0;">
+                <i class="fa-solid fa-circle-check fa-fade"></i> WhatsApp Dispatched Automatically
+            </div>
+            
             <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1.5rem;">Give this ticket to the patient or scan QR code to track live status.</p>
             
+            <a href="#" id="ticketWhatsAppBtn" target="_blank" class="btn btn-primary" style="width: 100%; margin-bottom: 0.75rem; background-color: #25D366; border-color: #25D366; color: white; display: flex; align-items: center; justify-content: center; gap: 0.5rem; text-decoration: none; font-weight: 700;">
+                <i class="fa-brands fa-whatsapp" style="font-size: 1.2rem;"></i> Open WhatsApp Chat (Optional)
+            </a>
+
             <button class="btn btn-primary" style="width: 100%;" onclick="document.getElementById('ticketModal').style.display='none'">
                 Dismiss
             </button>
@@ -267,6 +550,40 @@
 
                 document.getElementById('activeDoctorsCount').innerText = doctors.filter(d => d.isAvailable).length;
 
+                // Update Clinic Reliability Score
+                if (doctors.length > 0) {
+                    const avgReliability = Math.round(doctors.reduce((sum, d) => sum + d.reliabilityScore, 0) / doctors.length);
+                    let label = 'Excellent';
+                    let color = 'var(--success)';
+                    let iconClass = 'fa-solid fa-square-check';
+                    
+                    if (avgReliability < 50) {
+                        label = 'Unstable';
+                        color = 'var(--danger)';
+                        iconClass = 'fa-solid fa-circle-exclamation fa-fade';
+                    } else if (avgReliability < 75) {
+                        label = 'Moderate';
+                        color = 'var(--warning)';
+                        iconClass = 'fa-solid fa-triangle-exclamation';
+                    } else if (avgReliability < 90) {
+                        label = 'Good';
+                        color = 'var(--primary)';
+                        iconClass = 'fa-solid fa-circle-info';
+                    }
+
+                    const card = document.getElementById('clinicReliabilityCard');
+                    if (card) card.style.borderColor = color;
+                    
+                    const icon = document.getElementById('clinicReliabilityIcon');
+                    if (icon) {
+                        icon.className = iconClass;
+                        icon.style.color = color;
+                    }
+                    
+                    const text = document.getElementById('clinicReliabilityText');
+                    if (text) text.innerText = `${avgReliability}/100 (${label})`;
+                }
+
                 // 2. Build Active Doctors Cards Grid
                 const grid = document.getElementById('doctorsGrid');
                 let gridHtml = '';
@@ -276,6 +593,11 @@
                     const statusText = doc.isAvailable ? 'Online' : 'Away';
                     const servingText = doc.currentTokenNumber ? doc.currentTokenNumber : 'None (Idle)';
                     
+                    let relColor = 'var(--success)';
+                    if (doc.reliabilityScore < 50) relColor = 'var(--danger)';
+                    else if (doc.reliabilityScore < 75) relColor = 'var(--warning)';
+                    else if (doc.reliabilityScore < 90) relColor = 'var(--primary)';
+
                     gridHtml += `
                     <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; border-left: 5px solid ${doc.isAvailable ? 'var(--primary)' : 'var(--border)'};">
                         <div>
@@ -296,9 +618,17 @@
                                     <span style="color: var(--text-muted);">Waiting Patients:</span>
                                     <strong style="color: var(--primary);">${doc.waitingCount} patients</strong>
                                 </div>
-                                <div style="display: flex; justify-content: space-between;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
                                     <span style="color: var(--text-muted);">Consult. Speed:</span>
                                     <strong>${doc.averageConsultationTime} mins</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                                    <span style="color: var(--text-muted);">Queue Reliability:</span>
+                                    <strong style="color: ${relColor};">${doc.reliabilityScore}/100 (${doc.reliabilityLabel})</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; border-top: 1px dashed var(--border); margin-top: 0.5rem; padding-top: 0.5rem;">
+                                    <span style="color: var(--text-muted); font-weight: 600;">Est. Wait Time:</span>
+                                    <strong style="color: var(--warning);">${doc.estimatedWaitMinutes} mins</strong>
                                 </div>
                             </div>
                         </div>
@@ -468,42 +798,7 @@
             }
         }
 
-        // Fetch patient details and prompt skip modal
-        async function promptSkipPatientByToken(tokenNumber) {
-            try {
-                const patient = await QueueCureAPI.request(`/queue/status/${tokenNumber}`, 'GET', null, false);
-                skipTargetTokenId = patient.id || null; // Wait, let's query patient from database using status route.
-                // In our QueueController.cs GetTokenStatus returns fields:
-                // patientName, TokenNumber, statusText, estimatedWaitMinutes etc. Let's make sure it returns patient ID in JSON!
-                // Wait! Let's check: in QueueController.cs, GetTokenStatus did NOT return Id!
-                // Let's check: did it return Id? No, it did not! 
-                // BUT wait! In GetTokenStatus endpoint of QueueController.cs, we can easily change it or we can skip by TokenNumber or look up.
-                // Let's modify the GET api/queue/status/{tokenNumber} or skip endpoint to support skipping by token number, or we can just fetch the patient ID.
-                // Wait, it is much easier if our GET api/queue/status/{tokenNumber} also returns the `id` field!
-                // Let's check if it does. In our previous step, GetTokenStatus returned:
-                // patient.TokenNumber, patientName = patient.Name, status = patient.Status, doctorName, roomNumber, etc. It did not have ID!
-                // Oh, wait! In QueueController.cs line 125, we had `var patient = await _queueService.GetPatientDetailsAsync(tokenNumber);`.
-                // We can fetch the ID in the status endpoint.
-                // Wait, did we modify it? Yes, let's view QueueController.cs lines 122-146. It didn't return patient.Id.
-                // Let's check if we can modify `GetTokenStatus` in `QueueController.cs` to return `id = patient.Id`.
-                // Yes! Adding `id = patient.Id` to the status endpoint takes 2 seconds and is extremely helpful!
-                
-                // Let's show the modal prompt
-                document.getElementById('skipConfirmPatientName').innerText = patient.patientName;
-                document.getElementById('skipConfirmToken').innerText = patient.tokenNumber;
-                
-                // Fetch ID
-                // Wait! If GetTokenStatus doesn't return ID yet, let's edit QueueController.cs to include it!
-                // Let's see if we should edit QueueController.cs to return `id = patient.Id`. Yes, let's do it!
-                
-                // Set target id (we will query it from details)
-                // If the details endpoint didn't have ID, we can get it. Let's look at what details returns.
-                // Let's fetch the ID by calling status route. If it has no ID, let's write a replace_file_content to add `id = patient.Id` to GetTokenStatus.
-                // Let's double check if we can edit it.
-            } catch (err) {
-                console.error(err);
-            }
-        }
+        // (Cleaned up duplicate function definition)
 
         // Submit Check-in form
         document.getElementById('checkInForm').addEventListener('submit', async (e) => {
@@ -526,7 +821,8 @@
                 // Show ticket
                 document.getElementById('ticketNumber').innerText = token.tokenNumber;
                 document.getElementById('ticketPatient').innerText = token.name;
-                document.getElementById('ticketDoctor').innerText = document.getElementById('doctorSelect').options[document.getElementById('doctorSelect').selectedIndex].text.split(' (')[0];
+                const doctorSelectedName = document.getElementById('doctorSelect').options[document.getElementById('doctorSelect').selectedIndex].text.split(' (')[0];
+                document.getElementById('ticketDoctor').innerText = doctorSelectedName;
                 document.getElementById('ticketRoom').innerText = token.tokenNumber.split('-')[0];
                 document.getElementById('ticketWait').innerText = token.estimatedWaitMinutes;
                 document.getElementById('ticketTime').innerText = new Date(token.checkInTime).toLocaleTimeString();
@@ -537,11 +833,25 @@
                 const timeOpts = { hour: '2-digit', minute: '2-digit' };
                 document.getElementById('ticketArrivalWindow').innerText = `${wStart.toLocaleTimeString([], timeOpts)} - ${wEnd.toLocaleTimeString([], timeOpts)}`;
                 
+                // Construct WhatsApp click-to-chat text link
+                const waText = `*QueueCure AI+ Ticket*\n` +
+                               `Hello *${token.name}*, your token has been registered successfully!\n\n` +
+                               `• *Token:* ${token.tokenNumber}\n` +
+                               `• *Consultant:* ${doctorSelectedName}\n` +
+                               `• *Room:* Room ${token.tokenNumber.split('-')[0]}\n` +
+                               `• *Est. Wait:* ~${token.estimatedWaitMinutes} Mins\n\n` +
+                               `Track your live status here:\n` +
+                               `http://localhost:5007/patient/tracker.html?token=${token.tokenNumber}`;
+                
+                const cleanPhone = phone.replace(/[^0-9]/g, '');
+                document.getElementById('ticketWhatsAppBtn').href = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(waText)}`;
+                
                 document.getElementById('ticketModal').style.display = 'flex';
 
                 document.getElementById('checkInForm').reset();
                 await loadQueueMonitor();
                 await loadDoctorsList();
+                await loadWhatsAppLogs();
             } catch (err) {
                 alert(err.message || "Failed to generate token.");
             }
@@ -641,10 +951,300 @@
             }
         }
 
+        // Simulated WhatsApp Logs loading
+        async function loadWhatsAppLogs() {
+            try {
+                const logs = await QueueCureAPI.request('/queue/whatsapp/logs', 'GET', null, true);
+                const list = document.getElementById('waOutboxLogs');
+                
+                if (logs.length === 0) {
+                    list.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;">
+                        No simulated messages sent yet.
+                    </div>`;
+                    return;
+                }
+
+                let html = '';
+                logs.forEach(msg => {
+                    let dateStr = msg.sentAt;
+                    if (dateStr && !dateStr.endsWith('Z')) {
+                        dateStr += 'Z';
+                    }
+                    const timeStr = new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    let formattedText = msg.messageText
+                        .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
+                        .replace(/\n/g, '<br>');
+
+                    html += `
+                    <div style="background-color: var(--bg-base); border: 1px solid var(--border); padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.8rem; position: relative;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem; font-weight: 700; color: #128c7e;">
+                            <span>To: ${msg.phoneNumber}</span>
+                            <span style="color: var(--text-muted); font-weight: normal; font-size: 0.7rem;">${timeStr}</span>
+                        </div>
+                        <div style="color: var(--text-main); line-height: 1.3;">
+                            ${formattedText}
+                        </div>
+                        <div style="text-align: right; margin-top: 0.25rem; font-size: 0.7rem; color: var(--success); font-weight: 700;">
+                            <i class="fa-solid fa-check-double"></i> Simulated Sent
+                        </div>
+                    </div>`;
+                });
+                list.innerHTML = html;
+            } catch (err) {
+                console.error("Failed to load WhatsApp logs", err);
+            }
+        }
+
+
+        // Tab switching logic
+        let currentActiveTab = 'LiveQueues';
+        
+        function switchReceptionistTab(tabName) {
+            currentActiveTab = tabName;
+
+            // Hide all sections
+            document.getElementById('sectionLiveQueues').style.display = 'none';
+            document.getElementById('sectionAnalytics').style.display = 'none';
+            document.getElementById('sectionWhatIf').style.display = 'none';
+            document.getElementById('sectionImpact').style.display = 'none';
+
+            // Deactivate all tab buttons
+            document.getElementById('tabLiveQueuesBtn').classList.remove('active');
+            document.getElementById('tabAnalyticsBtn').classList.remove('active');
+            document.getElementById('tabWhatIfBtn').classList.remove('active');
+            document.getElementById('tabImpactBtn').classList.remove('active');
+            
+            // Reset background styles of buttons
+            const tabButtons = [
+                document.getElementById('tabLiveQueuesBtn'),
+                document.getElementById('tabAnalyticsBtn'),
+                document.getElementById('tabWhatIfBtn'),
+                document.getElementById('tabImpactBtn')
+            ];
+            tabButtons.forEach(btn => {
+                btn.style.backgroundColor = 'transparent';
+                btn.style.color = 'var(--text-muted)';
+            });
+
+            // Show active section and activate button
+            const activeSec = document.getElementById(`section${tabName}`);
+            if (activeSec) activeSec.style.display = 'block';
+
+            const activeBtn = document.getElementById(`tab${tabName}Btn`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+                activeBtn.style.backgroundColor = 'var(--primary)';
+                activeBtn.style.color = 'white';
+            }
+
+            // Load data depending on tab
+            if (tabName === 'Analytics') {
+                loadClinicEfficiencyAnalytics();
+            } else if (tabName === 'WhatIf') {
+                loadSimulationDoctors();
+            } else if (tabName === 'Impact') {
+                loadQueueImpactLogs();
+            }
+        }
+
+        async function loadClinicEfficiencyAnalytics() {
+            try {
+                const analytics = await QueueCureAPI.request('/analytics/clinic-efficiency', 'GET', null, true);
+                
+                document.getElementById('analUtilization').innerText = `${analytics.doctorUtilization}%`;
+                document.getElementById('analAvgConsult').innerText = `${analytics.averageConsultationDuration}m`;
+                document.getElementById('analAvgWait').innerText = `${analytics.averageWaitTime}m`;
+                document.getElementById('analAccuracy').innerText = `${analytics.predictionAccuracy}%`;
+                
+                document.getElementById('analIdleTime').innerText = `${analytics.doctorIdleTimeMinutes} mins`;
+                document.getElementById('analNoShow').innerText = `${analytics.noShowRate}%`;
+                document.getElementById('analEmergencyRate').innerText = `${analytics.emergencyRate}%`;
+                document.getElementById('analServedCount').innerText = `${analytics.patientsServedToday} / ${analytics.totalPatientsToday}`;
+
+                const tbody = document.querySelector('#analDoctorTable tbody');
+                let html = '';
+                if (analytics.doctorStats && analytics.doctorStats.length > 0) {
+                    analytics.doctorStats.forEach(d => {
+                        html += `
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 0.75rem 1rem; font-weight: 700;">${d.doctorName}</td>
+                            <td style="padding: 0.75rem 1rem;">${d.specialty}</td>
+                            <td style="padding: 0.75rem 1rem; font-weight: 700; color: var(--primary);">${d.utilization}%</td>
+                            <td style="padding: 0.75rem 1rem;">${d.servedCount}</td>
+                            <td style="padding: 0.75rem 1rem;">${d.skippedCount}</td>
+                            <td style="padding: 0.75rem 1rem;">${d.avgConsultDuration} mins</td>
+                        </tr>`;
+                    });
+                } else {
+                    html = `<tr><td colspan="6" style="padding: 2rem; text-align: center; color: var(--text-muted);">No doctor statistics available.</td></tr>`;
+                }
+                tbody.innerHTML = html;
+            } catch (err) {
+                console.error("Failed to load clinic efficiency analytics", err);
+            }
+        }
+
+        async function loadSimulationDoctors() {
+            try {
+                const doctors = await QueueCureAPI.request('/doctor/list', 'GET', null, true);
+                const select = document.getElementById('simDocSelect');
+                select.innerHTML = '<option value="" disabled selected>Select a Doctor...</option>';
+                doctors.forEach(doc => {
+                    if (doc.isAvailable) {
+                        const opt = document.createElement('option');
+                        opt.value = doc.id;
+                        opt.innerText = doc.doctorName;
+                        select.appendChild(opt);
+                    }
+                });
+                
+                // Select first if available
+                if (select.options.length > 1) {
+                    select.selectedIndex = 1;
+                }
+                toggleSimDocSelect();
+            } catch (err) {
+                console.error("Failed to load simulation doctors", err);
+            }
+        }
+
+        function toggleSimDocSelect() {
+            const scenario = document.getElementById('simScenarioSelect').value;
+            const docSelectGroup = document.getElementById('simDocSelectGroup');
+            if (scenario === 'B') {
+                docSelectGroup.style.display = 'block';
+            } else {
+                docSelectGroup.style.display = 'none';
+            }
+        }
+
+        async function runWhatIfSimulation() {
+            const scenario = document.getElementById('simScenarioSelect').value;
+            const docId = scenario === 'B' ? document.getElementById('simDocSelect').value : null;
+
+            if (scenario === 'B' && !docId) {
+                alert("Please select a target doctor for Scenario B.");
+                return;
+            }
+
+            try {
+                const payload = {
+                    scenario: scenario,
+                    doctorId: docId
+                };
+                const res = await QueueCureAPI.request('/simulation/run', 'POST', payload, true);
+                
+                // Bind real metrics
+                document.getElementById('simRealWait').innerText = `${res.realAvgWaitTime}m`;
+                document.getElementById('simRealLen').innerText = res.realQueueLength;
+                document.getElementById('simRealDel').innerText = res.realPredictedDelaysCount;
+                document.getElementById('simRealUtil').innerText = `${res.realAvgDoctorUtilization}%`;
+
+                // Bind simulated metrics
+                document.getElementById('simSimWait').innerText = `${res.simulatedAvgWaitTime}m`;
+                document.getElementById('simSimLen').innerText = res.simulatedQueueLength;
+                document.getElementById('simSimDel').innerText = res.simulatedPredictedDelaysCount;
+                document.getElementById('simSimUtil').innerText = `${res.simulatedAvgDoctorUtilization}%`;
+
+                // Calculate deltas and style them
+                bindDelta('simWaitDelta', res.simulatedAvgWaitTime - res.realAvgWaitTime, 'm', true); // lower is better
+                bindDelta('simLenDelta', res.simulatedQueueLength - res.realQueueLength, '', true); // lower is better
+                bindDelta('simDelDelta', res.simulatedPredictedDelaysCount - res.realPredictedDelaysCount, '', true); // lower is better
+                bindDelta('simUtilDelta', res.simulatedAvgDoctorUtilization - res.realAvgDoctorUtilization, '%', false); // higher is better
+            } catch (err) {
+                alert(err.message || "Failed to run simulation.");
+            }
+        }
+
+        function bindDelta(elementId, value, unit, lowerIsBetter) {
+            const el = document.getElementById(elementId);
+            if (value === 0) {
+                el.innerText = "No change (0" + unit + ")";
+                el.style.color = "var(--text-muted)";
+                return;
+            }
+            
+            const sign = value > 0 ? "+" : "";
+            const roundedVal = Math.round(value * 10) / 10;
+            el.innerText = `${sign}${roundedVal}${unit}`;
+            
+            const isPositiveChange = value > 0;
+            const isGood = lowerIsBetter ? !isPositiveChange : isPositiveChange;
+            
+            if (isGood) {
+                el.style.color = "var(--success)"; // Green
+            } else {
+                el.style.color = "var(--danger)"; // Red
+            }
+        }
+
+        async function loadQueueImpactLogs() {
+            try {
+                const logs = await QueueCureAPI.request('/queue/impact/today', 'GET', null, true);
+                const tbody = document.querySelector('#impactLogsTable tbody');
+                
+                if (logs.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="8" style="padding: 2rem; text-align: center; color: var(--text-muted);">No queue impact logs recorded today.</td></tr>`;
+                    return;
+                }
+
+                let html = '';
+                logs.forEach(log => {
+                    let dateStr = log.timestamp;
+                    if (dateStr && !dateStr.endsWith('Z')) {
+                        dateStr += 'Z';
+                    }
+                    const timeStr = new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    
+                    let badgeColor = 'var(--text-muted)';
+                    let badgeBg = 'var(--bg-base)';
+                    
+                    if (log.eventType === 'EmergencyCheckIn' || log.eventType === 'EmergencyElevation') {
+                        badgeColor = 'white';
+                        badgeBg = 'var(--danger)';
+                    } else if (log.eventType === 'ConsultationDelay') {
+                        badgeColor = 'white';
+                        badgeBg = 'var(--warning)';
+                    } else if (log.eventType === 'PatientRestored') {
+                        badgeColor = 'white';
+                        badgeBg = '#6366f1';
+                    }
+
+                    const typeBadge = `<span style="background-color: ${badgeBg}; color: ${badgeColor}; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem;">${log.eventType}</span>`;
+                    
+                    let shiftHtml = '';
+                    if (log.impactMinutes === 0) {
+                        shiftHtml = '<span style="color: var(--text-muted);">0m</span>';
+                    } else if (log.impactMinutes > 0) {
+                        shiftHtml = `<span style="color: var(--danger); font-weight: 700;">+${Math.round(log.impactMinutes)}m</span>`;
+                    } else {
+                        shiftHtml = `<span style="color: var(--success); font-weight: 700;">${Math.round(log.impactMinutes)}m</span>`;
+                    }
+
+                    html += `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 0.75rem 1rem;">${timeStr}</td>
+                        <td style="padding: 0.75rem 1rem;">${typeBadge}</td>
+                        <td style="padding: 0.75rem 1rem; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${log.eventDetail}">${log.eventDetail}</td>
+                        <td style="padding: 0.75rem 1rem; font-weight: 700;">${log.tokenNumber}</td>
+                        <td style="padding: 0.75rem 1rem;">${log.patientName}</td>
+                        <td style="padding: 0.75rem 1rem;">${Math.round(log.waitTimeBefore)}m</td>
+                        <td style="padding: 0.75rem 1rem;">${Math.round(log.waitTimeAfter)}m</td>
+                        <td style="padding: 0.75rem 1rem;">${shiftHtml}</td>
+                    </tr>`;
+                });
+                tbody.innerHTML = html;
+            } catch (err) {
+                console.error("Failed to load queue impact logs", err);
+            }
+        }
+
         // Refresh triggers
         document.getElementById('refreshBtn').addEventListener('click', async () => {
             await loadDoctorsList();
             await loadQueueMonitor();
+            await loadWhatsAppLogs();
         });
 
         // Initialize view and websocket live connection
@@ -657,11 +1257,32 @@
 
             await loadDoctorsList();
             await loadQueueMonitor();
+            await loadWhatsAppLogs();
 
             // Setup real-time updates
             QueueCureRealtime.on("QueueUpdated", async () => {
-                await loadQueueMonitor();
-                await loadDoctorsList();
+                if (currentActiveTab === 'LiveQueues') {
+                    await loadQueueMonitor();
+                    await loadDoctorsList();
+                    await loadWhatsAppLogs();
+                } else if (currentActiveTab === 'Analytics') {
+                    await loadClinicEfficiencyAnalytics();
+                } else if (currentActiveTab === 'Impact') {
+                    await loadQueueImpactLogs();
+                }
+            });
+
+            QueueCureRealtime.on("DelayDetected", async (payload) => {
+                console.log("Delay detected realtime broadcast:", payload);
+                if (currentActiveTab === 'LiveQueues') {
+                    await loadQueueMonitor();
+                    await loadDoctorsList();
+                    await loadWhatsAppLogs();
+                } else if (currentActiveTab === 'Analytics') {
+                    await loadClinicEfficiencyAnalytics();
+                } else if (currentActiveTab === 'Impact') {
+                    await loadQueueImpactLogs();
+                }
             });
 
             // Start SignalR

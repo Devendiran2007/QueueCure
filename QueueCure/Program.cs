@@ -18,10 +18,24 @@ builder.Services.AddDbContext<QueueCureDbContext>(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IQueueRepository, QueueRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IHistoricalDataRepository, HistoricalDataRepository>();
+builder.Services.AddSingleton<IPredictionModel, StatisticalPredictionModel>();
+builder.Services.AddScoped<IMLPredictionService, MLPredictionService>();
 builder.Services.AddScoped<IQueueService, QueueService>();
+builder.Services.AddScoped<IWhatsAppService, WhatsAppService>();
+builder.Services.AddScoped<IQueueReliabilityService, QueueReliabilityService>();
+builder.Services.AddScoped<IQueueImpactService, QueueImpactService>();
+builder.Services.AddScoped<IPredictionExplanationService, PredictionExplanationService>();
+builder.Services.AddScoped<IDelayDetectionService, DelayDetectionService>();
+builder.Services.AddHostedService<DelayMonitoringBackgroundService>();
+builder.Services.AddScoped<ISimulationEngine, SimulationEngine>();
 
 // 3. Add controllers and OpenAPI support
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 builder.Services.AddOpenApi();
 
 // 4. Add SignalR

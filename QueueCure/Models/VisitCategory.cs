@@ -6,6 +6,8 @@ namespace QueueCure.Models
         GeneralCheckup,
         DiabetesReview,
         CardiologyConsultation,
-        FollowUp
+        FollowUp,
+        OrthopedicConsultation,
+        PediatricConsultation
     }
 }

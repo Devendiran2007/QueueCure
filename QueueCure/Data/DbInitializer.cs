@@ -84,6 +84,7 @@ namespace QueueCure.Data
             context.SaveChanges();
 
             SeedPatients(context);
+            SeedHistoricalConsultations(context);
         }
 
         private static void SeedPatients(QueueCureDbContext context)
@@ -134,6 +135,25 @@ namespace QueueCure.Data
                     };
 
                     context.QueueEvents.AddRange(checkInEvent, startedEvent, completedEvent);
+
+                    // Pre-seed simulated WhatsApp messages for completed patients
+                    var waRegMsg = new WhatsAppMessage
+                    {
+                        PhoneNumber = patient.PhoneNumber,
+                        MessageText = $"*QueueCure AI+ Ticket*\nHello *{patient.Name}*, your token has been registered successfully!\n\n• *Token Number:* {patient.TokenNumber}\n• *Consultant:* {(doctorId == doc1.Id ? doc1.Name : doc2.Name)}\n• *Assigned Room:* Room {prefix}\n• *Est. Wait Time:* ~0 Mins\n• *Est. Start Time:* {patient.CheckInTime.AddHours(5.5).ToString("hh:mm tt")}\n\nTrack your live queue position:\nhttp://localhost:5007/patient/tracker.html?token={patient.TokenNumber}",
+                        SentAt = patient.CheckInTime,
+                        Status = "Delivered"
+                    };
+                    context.WhatsAppMessages.Add(waRegMsg);
+
+                    var waCalledMsg = new WhatsAppMessage
+                    {
+                        PhoneNumber = patient.PhoneNumber,
+                        MessageText = $"🔔 *YOUR TURN HAS ARRIVED!*\n\nHello *{patient.Name}*, your token *{patient.TokenNumber}* is now called.\n\nPlease proceed immediately to *Room {prefix}* for your consultation.\n\nView live status: http://localhost:5007/patient/tracker.html?token={patient.TokenNumber}",
+                        SentAt = patient.CheckInTime.AddMinutes(15),
+                        Status = "Delivered"
+                    };
+                    context.WhatsAppMessages.Add(waCalledMsg);
                 }
 
                 // Fever: average 8 minutes (seeded: 10 mins and 6 mins)
@@ -147,6 +167,64 @@ namespace QueueCure.Data
                 // Diabetes Review: average 15 minutes (seeded: 18 mins and 12 mins)
                 SeedCompletedPatient("Diabetes Patient 1", VisitCategory.DiabetesReview, doc2.Id, 18);
                 SeedCompletedPatient("Diabetes Patient 2", VisitCategory.DiabetesReview, doc2.Id, 12);
+
+                context.SaveChanges();
+            }
+        }
+
+        private static void SeedHistoricalConsultations(QueueCureDbContext context)
+        {
+            var doc1 = context.Doctors.FirstOrDefault(d => d.Name == "Dr. Albert Stone");
+            var doc2 = context.Doctors.FirstOrDefault(d => d.Name == "Dr. Betty Smith");
+
+            if (doc1 != null && doc2 != null)
+            {
+                var rand = new Random(42);
+                var now = DateTime.UtcNow;
+
+                for (int i = 0; i < 60; i++)
+                {
+                    var doctorId = i % 2 == 0 ? doc1.Id : doc2.Id;
+                    var category = (VisitCategory)(i % Enum.GetValues(typeof(VisitCategory)).Length);
+                    
+                    int queuePos = rand.Next(0, 5);
+                    double avgDuration = category switch
+                    {
+                        VisitCategory.Fever => 8.0,
+                        VisitCategory.GeneralCheckup => 12.0,
+                        VisitCategory.DiabetesReview => 15.0,
+                        VisitCategory.CardiologyConsultation => 20.0,
+                        VisitCategory.FollowUp => 5.0,
+                        VisitCategory.OrthopedicConsultation => 18.0,
+                        VisitCategory.PediatricConsultation => 15.0,
+                        _ => 10.0
+                    };
+
+                    double duration = Math.Max(2.0, avgDuration + (rand.NextDouble() * 6.0 - 3.0));
+                    double waitTime = Math.Max(0.0, queuePos * avgDuration + (rand.NextDouble() * 10.0 - 5.0));
+
+                    var checkIn = now.AddDays(-rand.Next(1, 8)).AddHours(-rand.Next(1, 12));
+                    var start = checkIn.AddMinutes(waitTime);
+                    var end = start.AddMinutes(duration);
+
+                    var record = new HistoricalConsultation
+                    {
+                        Id = Guid.NewGuid(),
+                        PatientId = Guid.NewGuid(),
+                        DoctorId = doctorId,
+                        PatientCategory = category,
+                        QueuePositionWhenAdded = queuePos,
+                        CheckInTime = checkIn,
+                        ConsultationStartTime = start,
+                        ConsultationEndTime = end,
+                        ActualWaitTime = Math.Round(waitTime, 1),
+                        ConsultationDuration = Math.Round(duration, 1),
+                        DayOfWeek = checkIn.DayOfWeek,
+                        HourOfDay = checkIn.Hour
+                    };
+
+                    context.HistoricalConsultations.Add(record);
+                }
 
                 context.SaveChanges();
             }

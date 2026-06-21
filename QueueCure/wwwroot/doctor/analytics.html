@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Analytics Dashboard | QueueCure AI+</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Extra styles specific to Analytics Dashboard */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary);
+        }
+
+        .metric-card.color-success::before { background: var(--success); }
+        .metric-card.color-warning::before { background: var(--warning); }
+        .metric-card.color-danger::before { background: var(--danger); }
+        .metric-card.color-calling::before { background: var(--calling); }
+
+        .metric-icon {
+            font-size: 2.25rem;
+            color: var(--primary);
+            opacity: 0.85;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-light);
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .metric-card:hover .metric-icon {
+            transform: scale(1.1);
+        }
+
+        .metric-info {
+            flex: 1;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .metric-subtext {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        .health-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-top: 0.25rem;
+        }
+        .health-excellent { background-color: #d1fae5; color: #059669; }
+        .health-moderate { background-color: #fef3c7; color: #d97706; }
+        .health-critical { background-color: #fee2e2; color: #dc2626; }
+
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 992px) {
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        
+        .tab-btn {
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background-color: transparent;
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+        
+        .tab-btn.active {
+            background-color: var(--primary);
+            color: var(--text-inverse);
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <a href="#" class="brand">
+                <i class="fa-solid fa-square-plus brand-dot"></i> QueueCure <span style="font-weight: 300;">AI+</span>
+            </a>
+            <div class="nav-links">
+                <div class="nav-user">
+                    <span class="user-badge" id="doctorNameHeader">Doctor Profile</span>
+                    <span id="availabilityStatus" class="token-status status-active">Online</span>
+                </div>
+                <button class="btn btn-outline" id="logoutBtn">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1 style="font-weight: 800; font-size: 2rem; margin-bottom: 0.25rem;" id="welcomeDoctor">Doctor Analytics</h1>
+                    <p style="color: var(--text-muted);" id="doctorMeta">Specialization • Room N/A</p>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <a href="dashboard.html" class="btn btn-primary">
+                        <i class="fa-solid fa-stethoscope"></i> Console View
+                    </a>
+                </div>
+            </div>
+
+            <!-- KPI Metrics Grid -->
+            <div class="analytics-grid">
+                <!-- Current Patient -->
+                <div class="metric-card color-calling">
+                    <div class="metric-icon" style="background: #f3e8ff; color: #8b5cf6;">
+                        <i class="fa-solid fa-user-clock"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-label">Current Patient</div>
+                        <div class="metric-value" id="currentPatientVal" style="font-size: 1.35rem;">None (Idle)</div>
+                        <div class="metric-subtext" id="currentPatientName">-</div>
+                    </div>
+                </div>
+
+                <!-- Patients Waiting -->
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-label">Patients Waiting</div>
+                        <div class="metric-value" id="waitingCountVal">0</div>
+                        <div class="metric-subtext">Waiting in lobby</div>
+                    </div>
+                </div>
+
+                <!-- Served Today -->
+                <div class="metric-card color-success">
+                    <div class="metric-icon" style="background: #ecfdf5; color: var(--success)">
+                        <i class="fa-solid fa-check-double"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-label">Served Today</div>
+                        <div class="metric-value" id="servedCountVal">0</div>
+                        <div class="metric-subtext">Completed visits</div>
+                    </div>
+                </div>
+
+                <!-- Average Wait Time -->
+                <div class="metric-card color-warning">
+                    <div class="metric-icon" style="background: #fffbeb; color: var(--warning)">
+                        <i class="fa-solid fa-hourglass-half"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-label">Avg Wait Time</div>
+                        <div class="metric-value" id="avgWaitTimeVal">0.0m</div>
+                        <div class="metric-subtext">Check-in to called</div>
+                    </div>
+                </div>
+
+                <!-- Average Consultation Time -->
+                <div class="metric-card color-calling">
+                    <div class="metric-icon" style="background: #f5f3ff; color: #a855f7">
+                        <i class="fa-solid fa-stethoscope"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-label">Avg Consult Time</div>
+                        <div class="metric-value" id="avgConsultTimeVal">0.0m</div>
+                        <div class="metric-subtext">From start to complete</div>
+                    </div>
+                </div>
+
+                <!-- Queue Health Score -->
+                <div class="metric-card" id="healthCard">
+                    <div class="metric-icon" id="healthIcon" style="background: #e6fffa; color: #0d9488">
+                        <i class="fa-solid fa-heart-pulse"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-label">Queue Health</div>
+                        <div class="metric-value" id="healthScoreVal">100/100</div>
+                        <div class="health-badge health-excellent" id="healthText">Excellent</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prediction Analytics Section -->
+            <div style="margin-top: 2rem; margin-bottom: 2rem;">
+                <h2 style="font-weight: 800; font-size: 1.5rem; margin-bottom: 1rem;">
+                    <i class="fa-solid fa-brain" style="color: var(--primary);"></i> Prediction Engine Analytics (Continuous Learning)
+                </h2>
+                <div class="analytics-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+                    <!-- Prediction Accuracy -->
+                    <div class="metric-card color-success">
+                        <div class="metric-icon" style="background: #e6fffa; color: var(--success);">
+                            <i class="fa-solid fa-bullseye"></i>
+                        </div>
+                        <div class="metric-info">
+                            <div class="metric-label">Prediction Accuracy</div>
+                            <div class="metric-value" id="displayPredictionAccuracy">--%</div>
+                            <div class="metric-subtext">Mean percentage accuracy</div>
+                        </div>
+                    </div>
+                    <!-- Avg Prediction Error -->
+                    <div class="metric-card color-warning">
+                        <div class="metric-icon" style="background: #fffbeb; color: var(--warning);">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div class="metric-info">
+                            <div class="metric-label">Avg Prediction Error</div>
+                            <div class="metric-value" id="displayAvgPredictionError">-- mins</div>
+                            <div class="metric-subtext">Mean absolute wait time deviation</div>
+                        </div>
+                    </div>
+                    <!-- Records Used for Learning -->
+                    <div class="metric-card color-calling">
+                        <div class="metric-icon" style="background: #f3e8ff; color: var(--calling);">
+                            <i class="fa-solid fa-database"></i>
+                        </div>
+                        <div class="metric-info">
+                            <div class="metric-label">Records for Learning</div>
+                            <div class="metric-value" id="displayRecordsForLearning">--</div>
+                            <div class="metric-subtext">Completed records in dataset</div>
+                        </div>
+                    </div>
+                    <!-- Most/Least Accurate Categories -->
+                    <div class="card" style="grid-column: span 3; display: flex; flex-direction: column; gap: 0.5rem; padding: 1.25rem;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                            <div>
+                                <strong style="color: var(--success);"><i class="fa-solid fa-circle-arrow-up"></i> Most Accurate Categories</strong>
+                                <div id="displayMostAccurateCategories" style="margin-top: 0.25rem; font-weight: 600; color: var(--text-main);">--</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <strong style="color: var(--danger);"><i class="fa-solid fa-circle-arrow-down"></i> Least Accurate Categories</strong>
+                                <div id="displayLeastAccurateCategories" style="margin-top: 0.25rem; font-weight: 600; color: var(--text-main);">--</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Forecasting Section -->
+            <div style="margin-top: 2rem; margin-bottom: 2rem;">
+                <h2 style="font-weight: 800; font-size: 1.5rem; margin-bottom: 1rem;"><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--primary);"></i> Queue Forecasting (Tomorrow)</h2>
+                <div class="charts-row" style="grid-template-columns: 1.5fr 1fr;">
+                    <!-- Forecast KPI Cards -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;">
+                        <!-- Expected Patients Card -->
+                        <div class="metric-card" style="margin-bottom: 0;">
+                            <div class="metric-icon" style="background: var(--primary-light); color: var(--primary);">
+                                <i class="fa-solid fa-hospital-user"></i>
+                            </div>
+                            <div class="metric-info">
+                                <div class="metric-label">Expected Patients</div>
+                                <div class="metric-value" id="forecastPatientsVal">--</div>
+                                <div class="metric-subtext">Forecast for tomorrow</div>
+                            </div>
+                        </div>
+
+                        <!-- Expected Peak Hour Card -->
+                        <div class="metric-card color-warning" style="margin-bottom: 0;">
+                            <div class="metric-icon" style="background: #fffbeb; color: var(--warning)">
+                                <i class="fa-solid fa-hourglass-start"></i>
+                            </div>
+                            <div class="metric-info">
+                                <div class="metric-label">Expected Peak Hour</div>
+                                <div class="metric-value" id="forecastPeakHourVal" style="font-size: 1.05rem; white-space: nowrap;">--</div>
+                                <div class="metric-subtext">Highest check-in probability</div>
+                            </div>
+                        </div>
+
+                        <!-- Expected Wait Time Card -->
+                        <div class="metric-card color-calling" style="margin-bottom: 0;">
+                            <div class="metric-icon" style="background: #f5f3ff; color: #a855f7">
+                                <i class="fa-solid fa-clock-rotate-left"></i>
+                            </div>
+                            <div class="metric-info">
+                                <div class="metric-label">Expected Wait Time</div>
+                                <div class="metric-value" id="forecastWaitTimeVal">--</div>
+                                <div class="metric-subtext">Average wait tomorrow</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Methodology Card -->
+                    <div class="card" style="padding: 1.25rem;">
+                        <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem;"><i class="fa-solid fa-gears" style="color: var(--accent);"></i> Statistical Methodology</h3>
+                        <div style="font-size: 0.8rem; line-height: 1.4; display: flex; flex-direction: column; gap: 0.75rem; color: var(--text-muted);">
+                            <div>
+                                <strong style="color: var(--text-main);">1. Expected Patients Tomorrow:</strong>
+                                Calculated using a Day-of-Week (DoW) weighted model. A 70% weight is applied to the historical average for this specific day of the week, blended with a 30% weight of the overall daily patient average.
+                            </div>
+                            <div>
+                                <strong style="color: var(--text-main);">2. Expected Peak Hour:</strong>
+                                Determined by grouping all historical check-in timestamps and finding the mode of the distribution (the hour with the highest patient count).
+                            </div>
+                            <div>
+                                <strong style="color: var(--text-main);">3. Expected Waiting Time:</strong>
+                                Represents the all-time arithmetic mean of the waiting duration (registration check-in to buzzer call) across all completed sessions in this room.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section Row 1 -->
+            <div class="charts-row">
+                <!-- Daily Patient Volume -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fa-solid fa-chart-line" style="color: var(--primary);"></i> Daily Patient Volume</h2>
+                        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">LAST 7 DAYS</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="dailyVolumeChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Peak Hours -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title"><i class="fa-solid fa-clock" style="color: var(--warning);"></i> Peak Hours</h2>
+                        <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">ALL-TIME DISTRIBUTION</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="peakHoursChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section Row 2 -->
+            <div class="charts-row">
+                <!-- Consultation Trends (Daily & Category) -->
+                <div class="card" style="grid-column: span 2;">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2 class="card-title"><i class="fa-solid fa-chart-bar" style="color: var(--calling);"></i> Consultation Duration Trends</h2>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="tab-btn active" id="tabDailyBtn">Daily Averages</button>
+                            <button class="tab-btn" id="tabCategoryBtn">By Category</button>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="height: 350px;">
+                        <canvas id="consultTrendsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/api.js"></script>
+    <script>
+        // Check credentials and page access
+        if (!QueueCureAPI.isAuthenticated() || QueueCureAPI.getSession().role !== 'Doctor') {
+            window.location.href = '/index.html';
+        }
+
+        // DOM elements
+        const doctorNameHeader = document.getElementById('doctorNameHeader');
+        const welcomeDoctor = document.getElementById('welcomeDoctor');
+        const doctorMeta = document.getElementById('doctorMeta');
+        
+        // Metrics
+        const currentPatientVal = document.getElementById('currentPatientVal');
+        const currentPatientName = document.getElementById('currentPatientName');
+        const waitingCountVal = document.getElementById('waitingCountVal');
+        const servedCountVal = document.getElementById('servedCountVal');
+        const avgWaitTimeVal = document.getElementById('avgWaitTimeVal');
+        const avgConsultTimeVal = document.getElementById('avgConsultTimeVal');
+        const healthScoreVal = document.getElementById('healthScoreVal');
+        const healthText = document.getElementById('healthText');
+        const healthCard = document.getElementById('healthCard');
+
+        // Forecast Metrics
+        const forecastPatientsVal = document.getElementById('forecastPatientsVal');
+        const forecastPeakHourVal = document.getElementById('forecastPeakHourVal');
+        const forecastWaitTimeVal = document.getElementById('forecastWaitTimeVal');
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            QueueCureAPI.clearSession();
+            window.location.href = '/index.html';
+        });
+
+        // Charts references
+        let dailyVolumeChart = null;
+        let peakHoursChart = null;
+        let consultTrendsChart = null;
+        
+        // Stored API Data
+        let analyticsData = null;
+
+        // Load data from API
+        async function loadAnalytics() {
+            try {
+                const data = await QueueCureAPI.request('/doctor/analytics', 'GET', null, true);
+                analyticsData = data;
+
+                // Update Profile Info
+                doctorNameHeader.innerText = data.doctorName;
+                welcomeDoctor.innerText = `Welcome, ${data.doctorName}`;
+                doctorMeta.innerText = `${data.specialization} • Room ${data.roomNumber}`;
+
+                // Update Metrics Cards
+                if (data.currentPatient) {
+                    currentPatientVal.innerText = data.currentPatient.tokenNumber;
+                    currentPatientName.innerText = data.currentPatient.name;
+                } else {
+                    currentPatientVal.innerText = "None (Idle)";
+                    currentPatientName.innerText = "-";
+                }
+
+                waitingCountVal.innerText = data.patientsWaiting;
+                servedCountVal.innerText = data.patientsServed;
+                avgWaitTimeVal.innerText = `${data.averageWaitTime.toFixed(1)}m`;
+                avgConsultTimeVal.innerText = `${data.averageConsultationTime.toFixed(1)}m`;
+                healthScoreVal.innerText = `${data.queueHealthScore}/100`;
+
+                // Update Forecasts
+                if (data.forecast) {
+                    forecastPatientsVal.innerText = `${data.forecast.expectedPatientsTomorrow} patients`;
+                    forecastPeakHourVal.innerText = data.forecast.expectedPeakHour;
+                    forecastWaitTimeVal.innerText = `${data.forecast.expectedWaitingTime.toFixed(1)}m`;
+                }
+
+                // Update health rating badge and card colors
+                const score = data.queueHealthScore;
+                healthText.className = "health-badge";
+                if (score >= 80) {
+                    healthText.innerText = "Excellent";
+                    healthText.classList.add("health-excellent");
+                    healthCard.className = "metric-card color-success";
+                } else if (score >= 50) {
+                    healthText.innerText = "Moderate";
+                    healthText.classList.add("health-moderate");
+                    healthCard.className = "metric-card color-warning";
+                } else {
+                    healthText.innerText = "Critical";
+                    healthText.classList.add("health-critical");
+                    healthCard.className = "metric-card color-danger";
+                }
+
+                // Fetch Prediction Analytics
+                try {
+                    const predAnalytics = await QueueCureAPI.request('/analytics/prediction', 'GET', null, true);
+                    document.getElementById('displayPredictionAccuracy').innerText = `${predAnalytics.predictionAccuracy}%`;
+                    document.getElementById('displayAvgPredictionError').innerText = `${predAnalytics.averagePredictionError} mins`;
+                    document.getElementById('displayRecordsForLearning').innerText = predAnalytics.totalRecordsUsedForLearning;
+                    
+                    document.getElementById('displayMostAccurateCategories').innerText = 
+                        predAnalytics.mostAccurateCategories.length > 0 ? predAnalytics.mostAccurateCategories.join(', ') : 'None';
+                    
+                    document.getElementById('displayLeastAccurateCategories').innerText = 
+                        predAnalytics.leastAccurateCategories.length > 0 ? predAnalytics.leastAccurateCategories.join(', ') : 'None';
+                } catch (err) {
+                    console.error("Failed to load prediction engine analytics", err);
+                }
+
+                // Render or update charts
+                renderDailyVolumeChart(data.dailyVolume);
+                renderPeakHoursChart(data.peakHours);
+                renderConsultTrendsChart('daily'); // default tab
+
+            } catch (err) {
+                console.error("Failed to load analytics details", err);
+                alert("Failed to load analytics data: " + err.message);
+            }
+        }
+
+        // Render line chart for Daily Patient Volume
+        function renderDailyVolumeChart(volumeData) {
+            const ctx = document.getElementById('dailyVolumeChart').getContext('2d');
+            const labels = volumeData.map(d => d.dayOfWeek);
+            const counts = volumeData.map(d => d.count);
+
+            if (dailyVolumeChart) {
+                dailyVolumeChart.destroy();
+            }
+
+            // Create gradients
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(6, 182, 212, 0.4)');
+            gradient.addColorStop(1, 'rgba(6, 182, 212, 0.01)');
+
+            dailyVolumeChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Check-ins',
+                        data: counts,
+                        borderColor: '#06b6d4',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#06b6d4',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1, precision: 0 },
+                            grid: { borderDash: [5, 5] }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Render bar chart for Peak Hours
+        function renderPeakHoursChart(peakHoursData) {
+            const ctx = document.getElementById('peakHoursChart').getContext('2d');
+            
+            // Format labels for reasonable working hours, e.g. 08:00 to 20:00
+            // Find active hours range to not display a wide empty space of midnight hours
+            const startHour = 8;
+            const endHour = 20;
+            const labels = [];
+            const counts = [];
+            
+            for (let h = startHour; h <= endHour; h++) {
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                const displayHour = h % 12 === 0 ? 12 : h % 12;
+                labels.push(`${displayHour} ${ampm}`);
+                counts.push(peakHoursData[h] || 0);
+            }
+
+            if (peakHoursChart) {
+                peakHoursChart.destroy();
+            }
+
+            peakHoursChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Patients Registered',
+                        data: counts,
+                        backgroundColor: 'rgba(245, 158, 11, 0.7)',
+                        borderColor: '#f59e0b',
+                        borderWidth: 1.5,
+                        borderRadius: 6,
+                        hoverBackgroundColor: 'rgba(245, 158, 11, 0.9)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1, precision: 0 },
+                            grid: { borderDash: [5, 5] }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Render Consultation trends chart (can switch between Daily Averages and By Category)
+        function renderConsultTrendsChart(mode) {
+            if (!analyticsData) return;
+            const ctx = document.getElementById('consultTrendsChart').getContext('2d');
+
+            if (consultTrendsChart) {
+                consultTrendsChart.destroy();
+            }
+
+            if (mode === 'daily') {
+                const dailyAverages = analyticsData.consultationTrends.dailyAverages;
+                const labels = dailyAverages.map(d => d.dayOfWeek);
+                const values = dailyAverages.map(d => d.averageDuration);
+
+                // Line chart
+                const gradient = ctx.createLinearGradient(0, 0, 0, 350);
+                gradient.addColorStop(0, 'rgba(139, 92, 246, 0.3)');
+                gradient.addColorStop(1, 'rgba(139, 92, 246, 0.01)');
+
+                consultTrendsChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Avg Duration (mins)',
+                            data: values,
+                            borderColor: '#8b5cf6',
+                            backgroundColor: gradient,
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.35,
+                            pointBackgroundColor: '#8b5cf6',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'Duration (Minutes)' },
+                                grid: { borderDash: [5, 5] }
+                            },
+                            x: {
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            } else if (mode === 'category') {
+                const categoryAverages = analyticsData.consultationTrends.categoryAverages;
+                
+                // Helper to format category enums nicely
+                function formatCatName(cat) {
+                    return cat
+                        .replace(/([A-Z])/g, ' $1') // Insert space before capitals
+                        .trim();
+                }
+
+                const labels = Object.keys(categoryAverages).map(formatCatName);
+                const values = Object.values(categoryAverages);
+
+                // Bar chart
+                consultTrendsChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Average Consultation (mins)',
+                            data: values,
+                            backgroundColor: [
+                                'rgba(14, 116, 144, 0.7)',  // Fever
+                                'rgba(6, 182, 212, 0.7)',   // GeneralCheckup
+                                'rgba(16, 185, 129, 0.7)',  // DiabetesReview
+                                'rgba(239, 68, 68, 0.7)',   // Cardiology
+                                'rgba(139, 92, 246, 0.7)'   // FollowUp
+                            ],
+                            borderColor: [
+                                '#0e7490',
+                                '#06b6d4',
+                                '#10b981',
+                                '#ef4444',
+                                '#8b5cf6'
+                            ],
+                            borderWidth: 1.5,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'Minutes' },
+                                grid: { borderDash: [5, 5] }
+                            },
+                            x: {
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Hook up tab buttons
+        const tabDailyBtn = document.getElementById('tabDailyBtn');
+        const tabCategoryBtn = document.getElementById('tabCategoryBtn');
+
+        tabDailyBtn.addEventListener('click', () => {
+            tabDailyBtn.classList.add('active');
+            tabCategoryBtn.classList.remove('active');
+            renderConsultTrendsChart('daily');
+        });
+
+        tabCategoryBtn.addEventListener('click', () => {
+            tabCategoryBtn.classList.add('active');
+            tabDailyBtn.classList.remove('active');
+            renderConsultTrendsChart('category');
+        });
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadAnalytics();
+        });
+    </script>
+</body>
+</html>

@@ -2,6 +2,8 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using QueueCure.Data;
 using QueueCure.Repositories;
 using QueueCure.Services;
 using QueueCure.Models;
@@ -14,11 +16,28 @@ namespace QueueCure.Controllers
     {
         private readonly IQueueService _queueService;
         private readonly IQueueRepository _queueRepository;
+        private readonly IWhatsAppService _whatsAppService;
+        private readonly IQueueReliabilityService _reliabilityService;
+        private readonly IQueueImpactService _queueImpactService;
+        private readonly IPredictionExplanationService _explanationService;
+        private readonly QueueCureDbContext _context;
 
-        public QueueController(IQueueService queueService, IQueueRepository queueRepository)
+        public QueueController(
+            IQueueService queueService, 
+            IQueueRepository queueRepository, 
+            IWhatsAppService whatsAppService,
+            IQueueReliabilityService reliabilityService,
+            IQueueImpactService queueImpactService,
+            IPredictionExplanationService explanationService,
+            QueueCureDbContext context)
         {
             _queueService = queueService;
             _queueRepository = queueRepository;
+            _whatsAppService = whatsAppService;
+            _reliabilityService = reliabilityService;
+            _queueImpactService = queueImpactService;
+            _explanationService = explanationService;
+            _context = context;
         }
 
         [HttpPost("generate")]
@@ -27,10 +46,24 @@ namespace QueueCure.Controllers
         {
             try
             {
+                // Capture pre-wait times if emergency
+                Dictionary<Guid, double>? preWaitTimes = null;
+                if (model.IsEmergency)
+                {
+                    preWaitTimes = await _queueImpactService.GetCurrentWaitTimesSnapshotAsync(model.DoctorId);
+                }
+
                 var patient = await _queueService.GenerateTokenAsync(model.PatientName, model.PatientPhone, model.DoctorId, model.Category, model.IsEmergency);
                 var waitingCount = await _queueRepository.GetWaitingCountBeforePatientAsync(patient);
                 var waitMinutes = await _queueService.CalculateEstimatedWaitTimeAsync(patient);
                 var estStart = DateTime.UtcNow.AddMinutes(waitMinutes);
+
+                // Log impact if emergency
+                if (model.IsEmergency && preWaitTimes != null)
+                {
+                    string details = $"Emergency patient {patient.Name} ({patient.TokenNumber}) checked in";
+                    await _queueImpactService.RecordImpactAsync("EmergencyInsertion", details, model.DoctorId, preWaitTimes);
+                }
 
                 return Ok(new
                 {
@@ -59,7 +92,7 @@ namespace QueueCure.Controllers
         }
 
         [HttpPost("call-next/{doctorId}")]
-        [Authorize(Roles = "Doctor")]
+        [Authorize(Roles = "Receptionist,Doctor")]
         public async Task<IActionResult> CallNext(Guid doctorId)
         {
             try
@@ -102,6 +135,17 @@ namespace QueueCure.Controllers
             {
                 return BadRequest(new { message = "Consultation could not be completed." });
             }
+
+            // Resolve delay events
+            var activeDelays = await _context.DelayEvents
+                .Where(d => d.PatientId == tokenId && !d.IsResolved)
+                .ToListAsync();
+            foreach (var delay in activeDelays)
+            {
+                delay.IsResolved = true;
+            }
+            await _context.SaveChangesAsync();
+
             return Ok(patient);
         }
 
@@ -114,6 +158,17 @@ namespace QueueCure.Controllers
             {
                 return BadRequest(new { message = "Patient could not be marked as skipped." });
             }
+
+            // Resolve delay events
+            var activeDelays = await _context.DelayEvents
+                .Where(d => d.PatientId == tokenId && !d.IsResolved)
+                .ToListAsync();
+            foreach (var delay in activeDelays)
+            {
+                delay.IsResolved = true;
+            }
+            await _context.SaveChangesAsync();
+
             return Ok(patient);
         }
 
@@ -161,6 +216,7 @@ namespace QueueCure.Controllers
             return Ok(new
             {
                 id = patient.Id,
+                doctorId = patient.DoctorId,
                 patient.TokenNumber,
                 patientName = patient.Name,
                 status = (int)patient.Status,
@@ -267,12 +323,26 @@ namespace QueueCure.Controllers
         [Authorize(Roles = "Receptionist,Doctor")]
         public async Task<IActionResult> MarkEmergency(Guid patientId)
         {
-            var patient = await _queueService.MarkEmergencyAsync(patientId);
+            var patient = await _queueRepository.GetPatientByIdAsync(patientId);
             if (patient == null)
             {
                 return NotFound(new { message = "Patient not found." });
             }
-            return Ok(patient);
+
+            // Capture pre-wait times
+            var preWaitTimes = await _queueImpactService.GetCurrentWaitTimesSnapshotAsync(patient.DoctorId);
+
+            var updatedPatient = await _queueService.MarkEmergencyAsync(patientId);
+            if (updatedPatient == null)
+            {
+                return NotFound(new { message = "Patient could not be marked as emergency." });
+            }
+
+            // Log impact
+            string details = $"Patient {updatedPatient.Name} ({updatedPatient.TokenNumber}) elevated to Emergency Priority";
+            await _queueImpactService.RecordImpactAsync("EmergencyInsertion", details, updatedPatient.DoctorId, preWaitTimes);
+
+            return Ok(updatedPatient);
         }
 
         [HttpGet("history/skipped")]
@@ -308,12 +378,94 @@ namespace QueueCure.Controllers
         [Authorize(Roles = "Receptionist,Doctor")]
         public async Task<IActionResult> RestorePatient(Guid patientId)
         {
-            var patient = await _queueService.RestorePatientAsync(patientId);
+            var patient = await _queueRepository.GetPatientByIdAsync(patientId);
             if (patient == null)
+            {
+                return NotFound(new { message = "Patient not found." });
+            }
+
+            // Capture pre-wait times
+            var preWaitTimes = await _queueImpactService.GetCurrentWaitTimesSnapshotAsync(patient.DoctorId);
+
+            var updatedPatient = await _queueService.RestorePatientAsync(patientId);
+            if (updatedPatient == null)
             {
                 return NotFound(new { message = "Patient not found or cannot be restored." });
             }
-            return Ok(patient);
+
+            // Log impact
+            string details = $"Skipped patient {updatedPatient.Name} ({updatedPatient.TokenNumber}) restored to queue";
+            await _queueImpactService.RecordImpactAsync("PatientRestored", details, updatedPatient.DoctorId, preWaitTimes);
+
+            return Ok(updatedPatient);
+        }
+
+        [HttpGet("whatsapp/by-token/{tokenNumber}")]
+        public async Task<IActionResult> GetWhatsAppMessagesByToken(string tokenNumber)
+        {
+            var patient = await _queueRepository.GetPatientByTokenNumberAsync(tokenNumber);
+            if (patient == null)
+            {
+                return NotFound(new { message = "Token not found." });
+            }
+            var messages = await _whatsAppService.GetMessagesForPhoneAsync(patient.PhoneNumber);
+            return Ok(messages);
+        }
+
+        [HttpGet("whatsapp/logs")]
+        [Authorize(Roles = "Receptionist")]
+        public async Task<IActionResult> GetWhatsAppLogs()
+        {
+            var logs = await _whatsAppService.GetAllMessagesAsync();
+            return Ok(logs);
+        }
+
+        [HttpGet("reliability/{doctorId}")]
+        public async Task<IActionResult> GetQueueReliability(Guid doctorId)
+        {
+            var score = await _reliabilityService.CalculateReliabilityScoreAsync(doctorId);
+            var label = _reliabilityService.GetReliabilityLabel(score);
+            return Ok(new { score, label });
+        }
+
+        [HttpGet("explain/{patientId}")]
+        public async Task<IActionResult> GetWaitExplanation(Guid patientId)
+        {
+            try
+            {
+                var explanation = await _explanationService.GetWaitExplanationAsync(patientId);
+                return Ok(explanation);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("impact/today")]
+        [Authorize(Roles = "Receptionist")]
+        public async Task<IActionResult> GetQueueImpactsToday()
+        {
+            var today = DateTime.UtcNow.Date;
+            var impacts = await _context.QueueImpacts
+                .Include(q => q.Patient)
+                .Where(q => q.Timestamp >= today)
+                .OrderByDescending(q => q.Timestamp)
+                .Select(q => new
+                {
+                    q.Id,
+                    q.EventType,
+                    q.EventDetail,
+                    q.Timestamp,
+                    q.TokenNumber,
+                    patientName = q.Patient != null ? q.Patient.Name : "Unknown",
+                    q.WaitTimeBefore,
+                    q.WaitTimeAfter,
+                    q.ImpactMinutes
+                })
+                .ToListAsync();
+
+            return Ok(impacts);
         }
     }
 

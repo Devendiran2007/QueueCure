@@ -24,5 +24,6 @@ namespace QueueCure.Services
         // Settings updates
         Task UpdateGlobalSettingsAsync(int averageTime);
         Task UpdateDoctorConsultationTimeAsync(Guid doctorId, int averageTime);
+        Task<Doctor?> ToggleDoctorAvailabilityAsync(Guid doctorId);
     }
 }
