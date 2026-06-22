@@ -33,57 +33,264 @@ QueueCure AI+ is a real-time clinic queue intelligence platform that:
 
 ---
 
-# Event Sequence
+# 🔄 Real-Time Event Flow
 
-Receptionist Adds Patient
-           │
-           ▼
-      PatientAdded
-           │
-           ▼
-      SignalR Hub
-           │
- ┌─────────┼─────────┬─────────┐
- ▼         ▼         ▼         ▼
-Doctor    TV      Tracker   Analytics
+## Patient Registration Flow
 
---------------------------------------
+Receptionist Registers Patient
+│
+▼
+PatientAdded Event
+│
+▼
+Patient Saved To Database
+│
+▼
+SignalR Queue Hub
+│
+├──► Receptionist Dashboard Updated
+│
+├──► Doctor Console Updated
+│
+├──► TV Display Updated
+│
+├──► Patient Tracker Created
+│
+└──► Analytics Dashboard Updated
 
-Doctor Calls Next
-           │
-           ▼
-     QueueUpdated
-           │
-           ▼
- Wait Prediction Engine
-           │
-           ▼
- PredictionUpdated
-           │
-           ▼
- SignalR Broadcast
-           │
- ┌─────────┼─────────┬─────────┐
- ▼         ▼         ▼         ▼
-Doctor    TV      Tracker   Reception
+---
 
---------------------------------------
+## Call Next Patient Flow
 
-Delay Detected
-           │
-           ▼
-   DelayDetected
-           │
-           ▼
- Recalculate Arrival Window
-           │
-           ▼
- PredictionUpdated
-           │
-           ▼
- Broadcast To All Clients
+Doctor Clicks "Call Next"
+│
+▼
+QueueUpdated Event
+│
+▼
+Current Token Updated
+│
+▼
+Prediction Engine Recalculates Wait Times
+│
+▼
+Arrival Windows Recalculated
+│
+▼
+SignalR Queue Hub
+│
+├──► Receptionist Dashboard Updated
+│
+├──► Doctor Console Updated
+│
+├──► TV Display Updated
+│
+├──► Patient Tracker Updated
+│
+└──► Analytics Dashboard Updated
 
- ---
+---
+
+## Emergency Queue Flow
+
+Receptionist Marks Emergency Patient
+│
+▼
+EmergencyInserted Event
+│
+▼
+Emergency Patient Prioritized
+│
+▼
+Queue Impact Analysis Generated
+│
+▼
+Wait Times Recalculated
+│
+▼
+SignalR Queue Hub
+│
+├──► Receptionist Dashboard Updated
+│
+├──► Doctor Console Updated
+│
+├──► TV Display Updated
+│
+├──► Patient Tracker Updated
+│
+└──► Analytics Dashboard Updated
+
+---
+
+## Patient Skip Flow
+
+Doctor Skips Patient
+│
+▼
+PatientSkipped Event
+│
+▼
+Patient Added To Recovery Queue
+│
+▼
+Next Patient Selected
+│
+▼
+SignalR Queue Hub
+│
+├──► Receptionist Dashboard Updated
+│
+├──► Doctor Console Updated
+│
+├──► TV Display Updated
+│
+└──► Patient Tracker Updated
+
+---
+
+## Recovery Queue Flow
+
+Receptionist Clicks Restore
+│
+▼
+PatientRestored Event
+│
+▼
+Patient Reinserted Into Queue
+│
+▼
+Queue Recalculated
+│
+▼
+SignalR Queue Hub
+│
+├──► Receptionist Dashboard Updated
+│
+├──► Doctor Console Updated
+│
+├──► TV Display Updated
+│
+└──► Patient Tracker Updated
+
+---
+
+## Consultation Completion Flow
+
+Doctor Completes Consultation
+│
+▼
+ConsultationCompleted Event
+│
+▼
+Consultation History Saved
+│
+▼
+Historical Learning Data Updated
+│
+▼
+Doctor Statistics Updated
+│
+▼
+Prediction Model Updated
+│
+▼
+SignalR Queue Hub
+│
+├──► Queue Updated
+│
+├──► Analytics Updated
+│
+└──► Doctor Metrics Updated
+
+---
+
+## Smart Delay Detection Flow
+
+Consultation Running Longer Than Expected
+│
+▼
+DelayDetected Event
+│
+▼
+Delay Logged
+│
+▼
+Queue Reliability Recalculated
+│
+▼
+Arrival Windows Recalculated
+│
+▼
+Wait Time Predictions Updated
+│
+▼
+SignalR Queue Hub
+│
+├──► Receptionist Dashboard Updated
+│
+├──► Doctor Console Updated
+│
+├──► TV Display Updated
+│
+├──► Patient Tracker Updated
+│
+└──► Analytics Dashboard Updated
+
+---
+
+## AI Prediction Flow
+
+Queue State Changes
+│
+▼
+Prediction Engine Triggered
+│
+▼
+Historical Data Analyzed
+│
+▼
+Wait Time Predicted
+│
+▼
+Confidence Score Generated
+│
+▼
+Explanation Generated
+│
+▼
+PredictionUpdated Event
+│
+▼
+SignalR Queue Hub
+│
+└──► All Connected Clients Updated
+
+---
+
+## WhatsApp Notification Flow
+
+Queue Event Occurs
+│
+▼
+Notification Service Triggered
+│
+▼
+Message Generated
+│
+▼
+WhatsApp Outbox Updated
+│
+▼
+Patient Notification Logged
+
+Examples:
+• Registration Confirmation
+• Arrival Reminder
+• Called Notification
+• Skip Notification
+• Restore Notification
+
+---
 
 # 🏥 Core Modules
 
