@@ -32,6 +32,7 @@ QueueCure AI+ is a real-time clinic queue intelligence platform that:
 * Synchronizes all screens instantly using SignalR
 
 ---
+'''
 
 # 🔄 Real-Time Event Flow
 
@@ -289,6 +290,8 @@ Examples:
 • Called Notification
 • Skip Notification
 • Restore Notification
+
+'''
 
 ---
 
