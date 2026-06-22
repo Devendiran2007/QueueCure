@@ -33,6 +33,58 @@ QueueCure AI+ is a real-time clinic queue intelligence platform that:
 
 ---
 
+# Event Sequence
+
+Receptionist Adds Patient
+           │
+           ▼
+      PatientAdded
+           │
+           ▼
+      SignalR Hub
+           │
+ ┌─────────┼─────────┬─────────┐
+ ▼         ▼         ▼         ▼
+Doctor    TV      Tracker   Analytics
+
+--------------------------------------
+
+Doctor Calls Next
+           │
+           ▼
+     QueueUpdated
+           │
+           ▼
+ Wait Prediction Engine
+           │
+           ▼
+ PredictionUpdated
+           │
+           ▼
+ SignalR Broadcast
+           │
+ ┌─────────┼─────────┬─────────┐
+ ▼         ▼         ▼         ▼
+Doctor    TV      Tracker   Reception
+
+--------------------------------------
+
+Delay Detected
+           │
+           ▼
+   DelayDetected
+           │
+           ▼
+ Recalculate Arrival Window
+           │
+           ▼
+ PredictionUpdated
+           │
+           ▼
+ Broadcast To All Clients
+
+ ---
+
 # 🏥 Core Modules
 
 ## 1️⃣ Receptionist Dashboard
@@ -468,14 +520,11 @@ GitHub Repository:
 # 👥 Team
 
 Team Name:
-[Your Team Name]
+Penguin?
 
 Members:
 
 * Devendiran K
-* [Member 2]
-* [Member 3]
-* [Member 4]
 
 ---
 
