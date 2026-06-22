@@ -32,266 +32,144 @@ QueueCure AI+ is a real-time clinic queue intelligence platform that:
 * Synchronizes all screens instantly using SignalR
 
 ---
-'''
 
-# 🔄 Real-Time Event Flow
+# 🔄 Socket Event Architecture
 
-## Patient Registration Flow
+```mermaid
+flowchart TD
 
-Receptionist Registers Patient
-│
-▼
-PatientAdded Event
-│
-▼
-Patient Saved To Database
-│
-▼
-SignalR Queue Hub
-│
-├──► Receptionist Dashboard Updated
-│
-├──► Doctor Console Updated
-│
-├──► TV Display Updated
-│
-├──► Patient Tracker Created
-│
-└──► Analytics Dashboard Updated
+A[Receptionist Registers Patient]
+--> B[PatientAdded Event]
 
----
+B --> C[Save Patient To Database]
 
-## Call Next Patient Flow
+C --> D[SignalR Queue Hub]
 
-Doctor Clicks "Call Next"
-│
-▼
-QueueUpdated Event
-│
-▼
-Current Token Updated
-│
-▼
-Prediction Engine Recalculates Wait Times
-│
-▼
-Arrival Windows Recalculated
-│
-▼
-SignalR Queue Hub
-│
-├──► Receptionist Dashboard Updated
-│
-├──► Doctor Console Updated
-│
-├──► TV Display Updated
-│
-├──► Patient Tracker Updated
-│
-└──► Analytics Dashboard Updated
+D --> E[Receptionist Dashboard Updated]
+D --> F[Doctor Console Updated]
+D --> G[TV Lobby Display Updated]
+D --> H[Patient Tracker Created]
+D --> I[Analytics Dashboard Updated]
 
----
+%% -------------------------------------
 
-## Emergency Queue Flow
+J[Doctor Clicks Call Next]
+--> K[QueueUpdated Event]
 
-Receptionist Marks Emergency Patient
-│
-▼
-EmergencyInserted Event
-│
-▼
-Emergency Patient Prioritized
-│
-▼
-Queue Impact Analysis Generated
-│
-▼
-Wait Times Recalculated
-│
-▼
-SignalR Queue Hub
-│
-├──► Receptionist Dashboard Updated
-│
-├──► Doctor Console Updated
-│
-├──► TV Display Updated
-│
-├──► Patient Tracker Updated
-│
-└──► Analytics Dashboard Updated
+K --> L[Current Token Updated]
 
----
+L --> M[Prediction Engine Recalculates Wait Times]
 
-## Patient Skip Flow
+M --> N[Arrival Windows Recalculated]
 
-Doctor Skips Patient
-│
-▼
-PatientSkipped Event
-│
-▼
-Patient Added To Recovery Queue
-│
-▼
-Next Patient Selected
-│
-▼
-SignalR Queue Hub
-│
-├──► Receptionist Dashboard Updated
-│
-├──► Doctor Console Updated
-│
-├──► TV Display Updated
-│
-└──► Patient Tracker Updated
+N --> D
 
----
+%% -------------------------------------
 
-## Recovery Queue Flow
+O[Receptionist Marks Emergency Patient]
+--> P[EmergencyInserted Event]
 
-Receptionist Clicks Restore
-│
-▼
-PatientRestored Event
-│
-▼
-Patient Reinserted Into Queue
-│
-▼
-Queue Recalculated
-│
-▼
-SignalR Queue Hub
-│
-├──► Receptionist Dashboard Updated
-│
-├──► Doctor Console Updated
-│
-├──► TV Display Updated
-│
-└──► Patient Tracker Updated
+P --> Q[Emergency Patient Prioritized]
 
----
+Q --> R[Queue Impact Analysis Generated]
 
-## Consultation Completion Flow
+R --> S[Wait Times Recalculated]
 
-Doctor Completes Consultation
-│
-▼
-ConsultationCompleted Event
-│
-▼
-Consultation History Saved
-│
-▼
-Historical Learning Data Updated
-│
-▼
-Doctor Statistics Updated
-│
-▼
-Prediction Model Updated
-│
-▼
-SignalR Queue Hub
-│
-├──► Queue Updated
-│
-├──► Analytics Updated
-│
-└──► Doctor Metrics Updated
+S --> D
 
----
+%% -------------------------------------
 
-## Smart Delay Detection Flow
+T[Doctor Skips Patient]
+--> U[PatientSkipped Event]
 
-Consultation Running Longer Than Expected
-│
-▼
-DelayDetected Event
-│
-▼
-Delay Logged
-│
-▼
-Queue Reliability Recalculated
-│
-▼
-Arrival Windows Recalculated
-│
-▼
-Wait Time Predictions Updated
-│
-▼
-SignalR Queue Hub
-│
-├──► Receptionist Dashboard Updated
-│
-├──► Doctor Console Updated
-│
-├──► TV Display Updated
-│
-├──► Patient Tracker Updated
-│
-└──► Analytics Dashboard Updated
+U --> V[Patient Added To Recovery Queue]
 
----
+V --> W[Next Patient Selected]
 
-## AI Prediction Flow
+W --> D
 
-Queue State Changes
-│
-▼
-Prediction Engine Triggered
-│
-▼
-Historical Data Analyzed
-│
-▼
-Wait Time Predicted
-│
-▼
-Confidence Score Generated
-│
-▼
-Explanation Generated
-│
-▼
-PredictionUpdated Event
-│
-▼
-SignalR Queue Hub
-│
-└──► All Connected Clients Updated
+%% -------------------------------------
 
----
+X[Receptionist Restores Patient]
+--> Y[PatientRestored Event]
 
-## WhatsApp Notification Flow
+Y --> Z[Patient Reinserted Into Queue]
 
-Queue Event Occurs
-│
-▼
-Notification Service Triggered
-│
-▼
-Message Generated
-│
-▼
-WhatsApp Outbox Updated
-│
-▼
-Patient Notification Logged
+Z --> AA[Queue Recalculated]
 
-Examples:
-• Registration Confirmation
-• Arrival Reminder
-• Called Notification
-• Skip Notification
-• Restore Notification
+AA --> D
 
-'''
+%% -------------------------------------
+
+AB[Doctor Starts Consultation]
+--> AC[ConsultationStarted Event]
+
+AC --> AD[Consultation Timer Started]
+
+AD --> AE[Delay Monitoring Started]
+
+%% -------------------------------------
+
+AF[Doctor Completes Consultation]
+--> AG[ConsultationCompleted Event]
+
+AG --> AH[Consultation History Saved]
+
+AH --> AI[Historical Learning Data Updated]
+
+AI --> AJ[Doctor Statistics Updated]
+
+AJ --> AK[Prediction Engine Updated]
+
+AK --> D
+
+%% -------------------------------------
+
+AL[Consultation Running Longer Than Expected]
+--> AM[DelayDetected Event]
+
+AM --> AN[Delay Logged]
+
+AN --> AO[Queue Reliability Recalculated]
+
+AO --> AP[Arrival Windows Recalculated]
+
+AP --> AQ[Wait Time Predictions Updated]
+
+AQ --> D
+
+%% -------------------------------------
+
+AR[Queue State Changes]
+--> AS[Prediction Engine Triggered]
+
+AS --> AT[Historical Data Analyzed]
+
+AT --> AU[Wait Time Predicted]
+
+AU --> AV[Confidence Score Generated]
+
+AV --> AW[Explainable AI Generated]
+
+AW --> AX[PredictionUpdated Event]
+
+AX --> D
+
+%% -------------------------------------
+
+AY[Notification Triggered]
+--> AZ[WhatsApp Message Generated]
+
+AZ --> BA[Registration Alert]
+
+AZ --> BB[Arrival Reminder]
+
+AZ --> BC[Called Notification]
+
+AZ --> BD[Skip Notification]
+
+AZ --> BE[Restore Notification]
+```
 
 ---
 
